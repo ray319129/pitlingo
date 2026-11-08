@@ -789,7 +789,7 @@
     // 補字幕要在「內容沒變就 return」之前跑：原生字幕持續空白時內容一直沒變，
     // 而那正是需要補的時候。
     tickGapFill(cur);
-    /* @test-only:start */ plTestHook('poll', cur); /* @test-only:end */
+    
     if (cur === lastSeenCaption) return;
     lastSeenCaption = cur;
     if (cur) {
@@ -852,17 +852,7 @@
   // 只做這一層的話，改一下 storage 就能無限用。
   // =========================================================================
   let licensed = false;              // 有沒有有效授權
-  /* @admin-only:start */
-  // ⚠️ 宣告要在 refreshLicensed 之前（let 有 TDZ）
-  let harvestOn = false;             // 管理版：有沒有設定收割權杖
-  // 收割的完整標記進度（state：waiting／ok／incomplete／failed／aborted）。收割佇列靠它判斷這一支結束了沒
-  const harvestStamp = { cid: '', state: '', note: '', segCount: 0 };
-  // 載入時後端就已經有收割蓋過章的完整一份（＝userscript 的 remoteComplete）
-  let harvestBundleComplete = false;
-  // 每句在影片裡的秒數（2026-11-06，後台翻譯清單的時間軸）：normKey → 秒，同一句取最早出現的那次。
-  // 只在重播的整軌預抓時記（分段在清單裡的累計長度＝影片時間），蓋章時一起送
-  const harvestTimes = new Map();
-  /* @admin-only:end */
+  
   // 有沒有登入帳號。**只影響免費額度的長度**（遊客 5 分鐘、登入 15 分鐘），
   // 不影響任何功能——登入不是使用的必要條件。
   let signedIn = false;
@@ -897,6 +887,8 @@
   /** 免費額度還剩幾秒。授權中回傳 Infinity。 */
   function freeSecondsLeft() {
     if (licensed) return Infinity;
+    return 0;   // 開源版：沒有免費額度，沒填 API key 就不翻譯
+    // eslint-disable-next-line no-unreachable
     if (!freeSession) return 0;
     rollFreeDay();
     // ⚠️ freeTier 掛在**設定的根層**，不是 sites[i] 底下。
@@ -990,13 +982,8 @@
     metric('free_exhausted', { sessionType: sessionType(), minutes: mins });
     box.classList.remove('on');
     if (hideStyleEl) { hideStyleEl.remove(); hideStyleEl = null; }   // 把原生英文字幕還給使用者
-    evWarn(freeSession
-      // 方案名稱不要寫死在這裡——「購買 Season」在一週通行證上線後就是錯的，
-      // 而且會隨定價調整而漂掉。指向購買頁，那裡的價格永遠是對的。
-      ? `⏳ 今天的免費 ${mins} 分鐘已用完（台灣時間 0 點重置）。原生英文字幕已恢復顯示。`
-        + (signedIn ? '' : '登入帳號每天可用 15 分鐘；')
-        + '購買授權可解除限制：https://pitlingo.com/buy'
-      : '🔒 這支影片不在免費範圍內（免費只涵蓋本季的練習賽／衝刺賽／排位賽／正賽）。');
+    void mins;
+    evWarn('🔑 還沒設定 Anthropic API key，PitLingo 不會翻譯。點工具列的 PitLingo 圖示填入 API key 後重新整理這一頁。');
   }
 
   // =========================================================================
@@ -1058,10 +1045,7 @@
   const AUTO_DIAG_END_MS = 90000;     // 停止播放這麼久之後補送最後一份
   const AUTO_DIAG_MIN_END_MS = 60000; // 還沒送過的話，至少要播過這麼久才值得補一份
   let autoDiagMin = 0;                // 0 = 關閉
-  /* @admin-only:start */
-  let adminAutoLive = false;          // 管理版「📡 自動開直播」：false／true（主機）／'standby'（診斷報告用）
-  let adminRafRate = null;            // 最近 10 秒 requestAnimationFrame 每秒幾次（A12）
-  /* @admin-only:end */
+  
   let autoDiagPlayedMs = 0;
   let autoDiagSent = 0;
   let autoDiagTickAt = 0;
@@ -1164,13 +1148,9 @@
     const res = await send({ type: 'licenseStatus' });
     const was = licensed;
     licensed = !!(res.ok && res.license && res.license.active);
-    /* @admin-only:start */
-    // 管理版設了收割權杖：後端把這個身分當付費（authClient → legacy），用戶端的免費閘門也要跟著放行，
-    // 否則整軌預抓會被「免費模式」擋掉、收割一支都跑不起來。
-    if (harvestOn) licensed = true;
-    /* @admin-only:end */
+    
     if (licensed !== was) {
-      evInfo(licensed ? '✅ 授權已生效，無使用限制' : 'ℹ️ 目前為免費模式');
+      evInfo(licensed ? '✅ 已設定 API key' : '🔑 尚未設定 API key');
       if (licensed) trialEndedShown = false;      // 剛買完要立刻恢復顯示
       // 額度用完時原生英文字幕被還給使用者；買完之後要重新隱藏，否則畫面上兩份英文
       applyHideNative();
@@ -1871,7 +1851,7 @@
     }
     lastRaw = text;
     currentEn = text;
-    /* @test-only:start */ plTestHook('native', text); /* @test-only:end */
+    
 
     // 提前量取樣：這一句的 VTT 是多久以前抵達的。
     // ⚠️ 只在**第一次**看到時取樣（取完就刪），否則同一句在畫面上停留
@@ -2034,18 +2014,7 @@
 
     if (!contentId) {
       if (!noCidSince) noCidSince = Date.now();
-      /* @admin-only:start */
-      // 前導端沒有影片編號就**一律不送**（2026-10-25，R18 排位）：送了會進 misc——不共用給觀眾、
-      // 不寫進共用快取，觀眾也看不到心跳而各自重翻，等於整場付兩次錢（實測 797 次呼叫、2,325 句）。
-      // 句子留在佇列，持續重抓編號；直播中 2 分鐘還拿不到就重新整理分頁（每個分頁最多 2 次，鐵則 3）。
-      if (leaderMode) {
-        state.heldNoCid = (state.heldNoCid || 0) + pending.size;
-        if (!state.noCidWarned) { state.noCidWarned = true; evErr('🎯 前導端拿不到影片編號：先不翻譯（避免進 misc、觀眾重翻）'); }
-        if (state.isLive && Date.now() - noCidSince > LEADER_NOCID_RELOAD_MS) leaderNoCidReload();
-        scheduleFlush();
-        return;
-      }
-      /* @admin-only:end */
+      
       // 沒有影片編號、頁面上也沒有 <video>＝沒有在播任何東西，不送也不留（2026-11-03）。
       // R19 正賽：在觀眾的 Chrome 開賽事頁（/page/12332/…，沒有 video）找連結，15 秒後照樣送出，
       // 281 句進了 misc、算在那位觀眾的授權上。有 video 但拿不到編號（從活動頁進去看）照舊等 15 秒再送。
@@ -2132,7 +2101,7 @@
         const code = res.result.reason === 'not_free_session' ? 'PL-C06'
           : /^E3[02]$/.test(be) ? 'PL-C07' : 'PL-C02';
         // logEvent 只吃一個參數，第二個會被靜默丟掉——一律用字串串接。
-        plErr(code, String(res.result.error || '(無訊息)') + (be ? '（伺服器 ' + be + '）' : ''));
+        plErr(code, String(res.result.error || '(無訊息)') + (be ? '（' + be + '）' : ''));
       }
       // 譯文可能正好對應畫面上「此刻仍在顯示」的那一句，補上去。
       //
@@ -2397,16 +2366,7 @@
   const FETCH_GAP_SLOW_MS = 800;     // 放慢時的間隔
   const YIELD_POLL_MS = 250;
   const YIELD_MAX_MS = 5000;         // 真的卡住時最多暫停這麼久
-  /* @admin-only:start */
-  // 管理版的收割佇列接手這一頁時（沒有人在看，影片只是用來拿到字幕清單）改用
-  // userscript 收割的節奏：6 條並行、每段 60ms、不讓路給影片。
-  // 沿用觀眾版的退讓，實測正賽 2,416 段在 15 分鐘只抓到 600 段（2026-10-12）。
-  // ⚠️ 只有佇列明確接手才切換——管理版平常拿來看比賽時仍然是觀眾版的節奏。
-  const HARVEST_FETCH_CONCURRENCY = 6;
-  const HARVEST_FETCH_GAP_MS = 60;
-  let harvestFast = false;
-  let fetchBoost = null;             // 正在跑的那一輪 fetchSegments 的「加開 worker」
-  /* @admin-only:end */
+  
 
   let harvestGen = 0;
   let harvestInFlight = false;
@@ -2555,20 +2515,7 @@
     });
   }
 
-  /* @admin-only:start */
-  /**
-   * 一句 cue 在整支影片裡的秒數（後台翻譯清單的時間軸）。
-   * F1TV 的分段 VTT 寫的是絕對時間還是分段內相對時間沒有實測過（見上面 OFFSET 的說明），所以兩種都認：
-   *   落在這個分段的範圍內 → 絕對時間，直接用；落在 0～分段長度 → 相對時間，加上分段起點；
-   *   都不是（例如帶 X-TIMESTAMP-MAP 的固定偏移）→ 退回分段起點（誤差最多一個分段，約幾秒）。
-   */
-  function cueVideoSec(start, seg) {
-    const slack = 1;
-    if (start >= seg.at - slack && start <= seg.at + seg.dur + slack) return start;
-    if (start >= -0.5 && start <= seg.dur + slack) return seg.at + Math.max(0, start);
-    return seg.at;
-  }
-  /* @admin-only:end */
+  
 
   function parseMediaPlaylist(body, baseUrl) {
     const segs = [];
@@ -2798,7 +2745,7 @@
       }
       if (d.kind === 'manifest' && typeof d.manifest === 'string') {
         noteStreamType(d.manifest);
-        /* @test-only:start */ noteEncryption(d.manifest); /* @test-only:end */
+        
         if (manifests.some((m) => m.url === d.url)) return;   // 同一份會重覆抓
         // 已經拿到字幕清單就不需要再留任何 manifest ——
         // 它們唯一的用途就是找出那個位址。
@@ -2844,32 +2791,7 @@
    * 媒體清單（有 #EXTINF）沒有 #EXT-X-ENDLIST ＝ 直播；有 ＝ 重播。
    * master 清單看不出來，略過。DASH 看 MPD 的 type="dynamic"。
    */
-  /* @test-only:start */
-  /**
-   * 串流有沒有加密（DRM）。**只記錄，不改變任何行為。只在測試版**（2026-09-17 使用者決定：為語音辨識評估加的，不放正式版）。
-   *
-   * 為什麼要量：「沒有官方字幕的影片自己做語音辨識」（handoff 9.1 #21）的第一個問題
-   * 就是「音訊拿不拿得到」。HLS 的 `#EXT-X-KEY`（METHOD 不是 NONE）、DASH 的
-   * `<ContentProtection>` 代表有加密；有 Widevine 之類的 DRM 時音訊分段是密文，
-   * 語音辨識只剩「擷取分頁聲音」一條路。這個數字從來沒有被量過（2026-09-17）。
-   * 清單內容在找到字幕清單後會被釋放，所以要在收到的當下就記。
-   */
-  const encryption = { seen: 0, encrypted: 0, methods: new Set() };
-  function noteEncryption(body) {
-    const t = String(body || '');
-    encryption.seen++;
-    const keys = [...t.matchAll(/#EXT-X-(?:SESSION-)?KEY:[^\n]*METHOD=([A-Z0-9-]+)/gi)]
-      .map((m) => m[1].toUpperCase()).filter((m) => m !== 'NONE');
-    const kf = [...t.matchAll(/KEYFORMAT="([^"]+)"/gi)].map((m) => m[1]);
-    const dash = /<ContentProtection/i.test(t);
-    if (keys.length || dash) {
-      encryption.encrypted++;
-      keys.forEach((m) => encryption.methods.add(m));
-      kf.forEach((f) => encryption.methods.add(/edef8ba9/i.test(f) ? 'Widevine' : /playready|9a04f079/i.test(f) ? 'PlayReady' : /fairplay|streamingkeydelivery/i.test(f) ? 'FairPlay' : f.slice(0, 40)));
-      if (dash) encryption.methods.add('DASH ContentProtection');
-    }
-  }
-  /* @test-only:end */
+  
 
   function noteStreamType(body) {
     const head = String(body || '').slice(0, 4000);
@@ -2901,13 +2823,7 @@
       //    「Box box」一場會出現幾十次，只記第一次就只補得到第一次。
       if (cue.start !== null && timeline.length < CUE_MAX) noteTimeline(k, t, cue, file, firstOfFile);
       firstOfFile = false;
-      /* @admin-only:start */
-      if (seg && typeof seg.at === 'number' && cue.start !== null) {
-        const sec = cueVideoSec(cue.start, seg);
-        const had = harvestTimes.get(k);
-        if (had === undefined ? harvestTimes.size < CUE_MAX : sec < had) harvestTimes.set(k, sec);
-      }
-      /* @admin-only:end */
+      
       if (prefetchSeen.has(k)) continue;
       prefetchSeen.add(k);
       // 已有譯文也要登記——那句確實出現在這支影片的 VTT 裡（坑 #16）
@@ -3011,9 +2927,7 @@
    * 因為收割不完等於沒有人把譯文灌進共用快取。
    */
   async function paceForPlayback(myGen) {
-    /* @admin-only:start */
-    if (harvestFast) return HARVEST_FETCH_GAP_MS;
-    /* @admin-only:end */
+    
     let pace = fetchPace();
     if (pace !== 'stall') return pace;
 
@@ -3060,14 +2974,9 @@
     const runners = [];
     const addWorkers = (n) => { while (runners.length < n) runners.push(worker()); };
     addWorkers(FETCH_CONCURRENCY);
-    /* @admin-only:start */
-    if (harvestFast) addWorkers(HARVEST_FETCH_CONCURRENCY);
-    fetchBoost = () => addWorkers(HARVEST_FETCH_CONCURRENCY);
-    /* @admin-only:end */
+    
     for (let i = 0; i < runners.length; i++) await runners[i];
-    /* @admin-only:start */
-    fetchBoost = null;
-    /* @admin-only:end */
+    
     if (stopReason) evWarn(`收割已中止（${stopReason}），已抓 ${state.segFetched}/${list.length} 段`);
     return stopReason;
   }
@@ -3100,8 +3009,7 @@
       const res = await send({ type: 'markComplete', cid, segCount, slug: location.pathname });
       const r = (res.ok && res.result) || {};
       if (r.ok) {
-        evOk(`✅ 已標記完整收割（${segCount} 段 / 後端 ${r.lineCount || '?'} 句）`
-          + '，之後看這支影片的人會跳過整軌預抓');
+        evOk(`✅ 整支影片已翻完並存進本機快取（${segCount} 段 / ${r.lineCount || '?'} 句），再看一次不必重新翻譯`);
       } else {
         evWarn(`標記完整收割未成功：${r.reason || r.error || '(未知)'}`);
       }
@@ -3118,6 +3026,8 @@
    * 等 20 秒是要讓最後幾批翻譯先回來並寫進後端。
    */
   function verifyUpload(cid, myGen) {
+    return;   // 開源版沒有共用快取，不需要回寫查核
+    // eslint-disable-next-line no-unreachable
     setTimeout(async () => {
       if (myGen !== harvestGen || cid !== contentId) return;
       const res = await send({ type: 'getBundle', cid, force: true });
@@ -3202,8 +3112,7 @@
     //
     // `force` 是測試指令用的，會繞過這個判斷（上線前那段測試工具要整段移除）。
     if (!licensed && !force) {
-      evInfo('免費模式：略過整軌預抓，改用播放器自己下載的字幕分段（提前量約 50 秒）。'
-        + '購買授權後會自動改用整軌預抓，拖動進度條也不會漏字幕。');
+      evInfo('尚未設定 API key：不預抓字幕。');
       setPhase('前瞻預譯中');
       return;
     }
@@ -3254,10 +3163,7 @@
       state.isLive = !isVod;
 
       if (isVod) {
-        /* @admin-only:start */
-        // 每個分段在影片裡的起點＝前面所有分段的 EXTINF 加總（重播的清單從影片開頭列起）
-        if (harvestOn) { let segAt = 0; for (const s of segs) { s.at = segAt; segAt += s.dur; } }
-        /* @admin-only:end */
+        
         // 已經有人完整收割過就不要再抓一次。
         //
         // 沒有這個判斷的話，每個開啟同一支影片的人都會再向 CDN 發 383 個請求、
@@ -3266,7 +3172,7 @@
         // 擴充功能到 v0.4.3 才補上。
         if (!force && bundleSegCount > 0 && bundleSegCount === segs.length && memo.size > 0) {
           state.harvestSkipped = true;
-          evOk(`⏭ 跳過整軌預抓：後端記錄這支已完整收割（${bundleSegCount} 段 / 本機 ${memo.size} 句），`
+          evOk(`⏭ 跳過整軌預抓：本機快取已有這支的完整譯文（${bundleSegCount} 段 / ${memo.size} 句），`
             + '不重複向 CDN 抓 ' + segs.length + ' 個分段');
           setPhase('前瞻預譯中');
           return;
@@ -3300,14 +3206,7 @@
         // 原本只看 segFailed，那只涵蓋「分段抓取」；翻譯失敗被放棄的句子完全
         // 不擋標記，等於可能把殘缺的 bundle 標成完整——之後所有人都跳過預抓，
         // 拿到的永遠是缺角的譯文，而且沒有任何機制會去補。
-        /* @admin-only:start */
-        // 管理版：用收割權杖蓋可信的章（等翻譯真的結束、譯文一起寫），不走 /v1/complete
-        if (harvestOn && state.harvestDone) {
-          harvestStampWhenSettled(cid, segs.length, myGen);
-          verifyUpload(cid, myGen);
-          return;
-        }
-        /* @admin-only:end */
+        
         if (state.harvestDone && !state.dropped) {
           markComplete(cid, segs.length, myGen);
         } else if (state.dropped) {
@@ -3354,29 +3253,26 @@
     const res = await send({ type: 'getBundle', cid });
     const b = (res.ok && res.bundle) || {};
     bundleSegCount = b.segCount || 0;
-    /* @admin-only:start */
-    // 帶收割權杖時 segCount 只會是收割蓋的章（後端 legacy），所以這裡可以直接信
-    harvestBundleComplete = harvestOn && bundleSegCount > 0 && Object.keys(b.lines || {}).length > 0;
-    /* @admin-only:end */
+    
     let n = 0;
     for (const [k, zh] of Object.entries(b.lines || {})) { if (!memo.has(k)) { remember(k, zh); n++; } }
     state.bundleCount = n;
 
-    if (n) { evOk(`☁ 已從共用譯文庫取得 ${n} 句（cid ${cid}），本片無須重新翻譯`); return; }
+    if (n) { evOk(`💾 已從本機快取取得 ${n} 句（cid ${cid}）`); return; }
 
     if (b.error) {
       bundleAttempts++;
       const hint = /401/.test(b.error) ? '（存取金鑰無效或尚未設定）' : '';
       if (bundleAttempts < BUNDLE_MAX_ATTEMPTS) {
         const wait = Math.min(30000, 3000 * bundleAttempts);   // 3s、6s、9s…
-        log(`共用快取讀取失敗${hint}：${b.error}，${wait / 1000} 秒後重試（${bundleAttempts}/${BUNDLE_MAX_ATTEMPTS}）`);
+        log(`本機快取讀取失敗${hint}：${b.error}，${wait / 1000} 秒後重試（${bundleAttempts}/${BUNDLE_MAX_ATTEMPTS}）`);
         bundleRetryTimer = setTimeout(() => loadBundle(cid, true), wait);
       } else {
-        log(`共用快取讀取失敗${hint}：${b.error}。已停止重試，改用逐句即時翻譯（較慢且較貴）。`);
+        log(`本機快取讀取失敗${hint}：${b.error}。已停止重試。`);
       }
       return;
     }
-    log(`共用快取尚無此影片的譯文（cid ${cid}），將以逐句即時翻譯運作`);
+    log(`本機快取沒有這支影片的譯文（cid ${cid}），開始翻譯`);
   }
 
   function checkContentChange() {
@@ -3385,11 +3281,7 @@
     const cid = currentContentId();
     if (!cid || cid === contentId) return;
     const prev = contentId;
-    /* @admin-only:start */
-    // 直播結束後 F1TV 自己播了下一支（沒人按）→ 不收那一支，回首頁（見 leaderAutoplayCheck）
-    if (prev && prev === leaderBeatCid && !userActedRecently()) { leaderGoHome('直播結束後 F1TV 自動播了下一支'); return; }
-    if (prev && prev === leaderBeatCid) leaderBye(prev);   // 前導端離開上一支：主動說一聲，免得觀眾那邊發告警
-    /* @admin-only:end */
+    
     contentId = cid;
     // 換影片時重置顯示狀態，但 memo 保留——不同影片的重複用語可以互相受惠
     lastRaw = ''; lastSeenCaption = ''; everSawCaption = false; currentEn = '';
@@ -3397,7 +3289,7 @@
     injectChecked = false; injectSince = Date.now(); seenCodes.clear();
     noSubShown = false;
     lastNonEmptyAt = Date.now(); gapReported = 0; noCaptionSince = Date.now();
-    /* @test-only:start */ encryption.seen = 0; encryption.encrypted = 0; encryption.methods.clear(); /* @test-only:end */
+    
     pending.clear(); requested.clear();
     clearTimeout(bundleRetryTimer); bundleAttempts = 0;
     observedNodes = new Set();
@@ -3448,12 +3340,7 @@
     state.serverCount = -1;
     state.playlistSegs = 0; state.segFetched = 0; state.segFailed = 0;
     state.isLive = false; state.harvestDone = false;
-    /* @admin-only:start */
-    harvestStamp.cid = ''; harvestStamp.state = ''; harvestStamp.note = '';
-    harvestBundleComplete = false;
-    harvestTimes.clear();
-    if (prev) harvestFast = false;     // 佇列是整頁導覽；同一頁內換影片＝有人手動點了別支
-    /* @admin-only:end */
+    
 
     if (prev) { setPhase('切換影片'); evInfo(`影片切換 ${prev} → ${cid}`); }
     metric('session_start', { sessionType: sessionType(), licensed });
@@ -3499,12 +3386,7 @@
        + `　|　翻譯：${settings.enabled ? '開啟' : '關閉'}`);
     evInfo('提示：擴充功能圖示 →「回報問題」→「傳送診斷資訊」可一鍵送出完整狀態');
 
-    /* @admin-only:start */
-    // ⚠️ 包 try：這一行在 boot() 裡，丟例外會讓整個擴充功能靜靜不動（收割權杖讀不到＝一般使用者）
-    try { harvestOn = !!((await chrome.storage.local.get('harvestToken')) || {}).harvestToken; } catch (e) { harvestOn = false; }
-    if (harvestOn) evInfo('🚜 管理版：已設定收割權杖，翻譯與完整標記走收割身分');
-    else evWarn('🚜 管理版：尚未設定收割權杖——不翻譯、不當前導端（擴充功能圖示 → 最下面「管理版：收割」）');
-    /* @admin-only:end */
+    
     // 授權狀態決定免費層的閘門。取不到就當未授權——
     // **但那不會鎖住功能**，只是套用免費額度（15 分鐘）。
     await refreshLicensed();
@@ -3519,8 +3401,8 @@
       if (!orphaned && !killed) { try { tickPrefetchResume(); } catch (e) { /* 不影響字幕 */ } }
       try { liveDelay.tick(state.isLive && !killed && !tooOld && !orphaned); } catch (e) { /* 不影響字幕 */ }
     }, 1000);
-    /* @admin-only:start */ leaderLoad(); /* @admin-only:end */
-    /* @test-only:start */ coverageBadgesStart(); /* @test-only:end */
+    
+    
 
     // 接收 MAIN world 注入 worker 後轉送回來的 VTT —— 提前量的唯一來源
     installInjectBridge();
@@ -3533,41 +3415,11 @@
     try {
       chrome.storage.local.get(['autoDiag', 'plAutoLive'], (o) => {
         autoDiagMin = autoDiagClamp(o && o.autoDiag);
-        /* @admin-only:start */
-        // 管理版開著「自動開直播」＝這台是無人值守的收割端（Ray 自己的機器，不是客戶）→ 預設每 10 分鐘送一份。
-        // 不寫進 storage：關掉自動開直播就跟著回到原本的設定
-        if (!autoDiagMin && o && o.plAutoLive) autoDiagMin = 10;
-        adminAutoLive = (o && o.plAutoLive) || false;
-        /* @admin-only:end */
+        
         if (autoDiagMin) evInfo(autoDiagStatus());
       });
     } catch (e) { /* noop */ }
-    /* @admin-only:start */
-    // 開關打開之後不用重新整理就要開始自動診斷（A14，2026-10-26）：以前只在載入頁面那一刻讀一次，
-    // 先開頁面、後開開關的那一場整場沒有自動診斷。使用者自己設的 autoDiag 優先，不覆蓋
-    try {
-      chrome.storage.onChanged.addListener((ch, area) => {
-        if (area !== 'local' || !ch.plAutoLive) return;
-        adminAutoLive = ch.plAutoLive.newValue || false;
-        chrome.storage.local.get(['autoDiag'], (o) => {
-          if (autoDiagClamp(o && o.autoDiag)) return;
-          const want = adminAutoLive ? 10 : 0;
-          if (want === autoDiagMin) return;
-          autoDiagMin = want; autoDiagPlayedMs = 0; autoDiagTickAt = 0; autoDiagCt = null;
-          evInfo(autoDiagStatus());
-        });
-      });
-    } catch (e) { /* noop */ }
-    // 繪製狀態（A12）：R18 Post-Race 收割端畫面全黑、進度條凍住，影片卻照播。
-    // 推測是視窗在螢幕外時 Chrome 不跑 requestAnimationFrame（播放器的介面靠它更新）——
-    // 下一次凍住時診斷報告要能直接回答「rAF 有沒有在跑、視窗在哪、影片的版面多大」
-    (function rafMeter() {
-      let n = 0;
-      const f = () => { n++; try { requestAnimationFrame(f); } catch (e) { /* noop */ } };
-      try { requestAnimationFrame(f); } catch (e) { /* noop */ }
-      setInterval(() => { adminRafRate = n / 10; n = 0; }, 10000);
-    })();
-    /* @admin-only:end */
+    
 
     setInterval(pollCaption, POLL_MS);
     setInterval(() => {
@@ -3612,13 +3464,8 @@
      */
     window.addEventListener('pagehide', () => {
       flushMetrics();
-      /* @admin-only:start */
-      if (leaderBeatCid) leaderBye(leaderBeatCid);
-      /* @admin-only:end */
-      if (!pending.size || !contentId) return;
-      const lines = Array.from(pending.values()).slice(0, 200);
-      send({ type: 'translateKeepalive', cid: contentId, lines });
-      evInfo(`離開頁面，最後送出 ${lines.length} 句給共用快取`);
+      
+
     });
 
     // 分頁重新可見／取得焦點時立刻重檢，不用等下一次輪詢。
@@ -3722,15 +3569,7 @@
     L.push(`產生時間　：${new Date().toISOString()}`);
     L.push(`版本　　　：${EXT_VERSION}`);
     L.push(`目前階段　：${phase}`);
-    /* @admin-only:start */
-    L.push(`自動開直播：${adminAutoLive === true ? '主機' : adminAutoLive === 'standby' ? '備援機（待命）' : '⚠️ 關（這台不會自己開直播）'}`);
-    {
-      const vr = v ? v.getBoundingClientRect() : null;
-      L.push(`畫面繪製　：rAF ${adminRafRate === null ? '量測中' : adminRafRate + ' 次/秒'}　可見度 ${document.visibilityState}`
-        + `　視窗 (${window.screenX},${window.screenY}) ${window.outerWidth}×${window.outerHeight}`
-        + `　影片版面 ${vr ? Math.round(vr.width) + '×' + Math.round(vr.height) : '-'}`);
-    }
-    /* @admin-only:end */
+    
     L.push(`網址　　　：${location.href}`);
     L.push(`UA　　　　：${navigator.userAgent}`);
     L.push('');
@@ -3752,11 +3591,7 @@
     const mBytes = manifests.reduce((a, m) => a + (m.bytes || 0), 0);
     L.push(`  其中 master ${mMaster} 份、字幕清單 ${mSubs} 份、共 ${(mBytes / 1024).toFixed(0)} KB`
       + (subtitlePlaylistUrl ? '（已取得清單，內容已釋放）' : ''));
-    /* @test-only:start */
-    L.push(`串流加密　：看過 ${encryption.seen} 份清單，其中 ${encryption.encrypted} 份有加密`
-      + (encryption.methods.size ? `（${[...encryption.methods].join('、')}）` : '')
-      + '　※ 評估語音辨識用：有 DRM 時音訊分段是密文，只能擷取分頁聲音');
-    /* @test-only:end */
+    
     L.push(`PLAY API 路徑：已停用（八輪未通，改用 Worker 注入 + 攔到的 manifest）`);
     L.push('');
     L.push('──── 整軌預抓（決定成本與拖進度條會不會漏）────');
@@ -3965,7 +3800,7 @@
         }
       }
     }
-    /* @test-only:start */ plTestHook('diag', L); /* @test-only:end */
+    
     L.push(`遠端狀態：${killed ? '⛔ killSwitch 已啟用' : '正常'}`
       + `${tooOld ? '　⛔ 版本過舊，已停止翻譯' : ''}`);
     L.push('');
@@ -3982,9 +3817,7 @@
 
   // 選項頁按「匯出診斷」時會來要這份報告
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    /* @test-only:start */
-    if (msg && typeof msg.type === 'string' && /^asr/.test(msg.type)) { plTestHook('message', msg); return false; }
-    /* @test-only:end */
+    
     // 設定頁的狀態卡要知道「這個分頁現在如何」
     if (msg && msg.type === 'quickStatus') {
       sendResponse({
@@ -4233,7 +4066,7 @@
       L.push(`${pad('事件')}${liveTest.events[liveTest.events.length - 1]}`);
     }
 
-    /* @test-only:start */ plTestHook('hud', L); /* @test-only:end */
+    
     body.textContent = L.join('\n');
   }
 
@@ -4265,387 +4098,9 @@
   //   保留 — diag / events / state / peek / debug / hud / live：回報問題的管道，正式版必須留著
   //   移除 — 測試工具與語音辨識：會繞過防護（強制預抓）、洩漏內部狀態、或只有開發時有用
   // =========================================================================
-  /* @admin-only:start */
-  // =========================================================================
-  // 管理版的收割（handoff 9.1 #26 第 3 階段；**正式版與測試版建置時整段移除**）
-  //
-  // 佇列、全季收割、提示條、狀態面板寫在 src/admin/harvest.js，只有管理版 manifest 會注入。
-  // 這裡只做兩件主程式才做得到的事：蓋可信的完整標記、把收割進度交出去。
-  // =========================================================================
-  const STAMP_BLOCK_TOL = 0.02;       // 沒有譯文的句子（多半是守門擋下）容許的比例，與 userscript 相同
-  const STAMP_SETTLE_MAX_MS = 10 * 60000;
+  
 
-  /** 這支影片還有幾句沒有譯文（守門擋下＋沒拿到結果的都算） */
-  function harvestMissing() {
-    let n = 0;
-    for (const k of sessionKeys) if (!memo.has(k)) n++;
-    return n;
-  }
-  const harvestSettled = () => !harvestInFlight && pending.size === 0 && inflight === 0;
-
-  /**
-   * 等翻譯真的結束，再用收割權杖蓋章（POST /v1/subs，譯文＋分段數一起寫）。
-   *
-   * ⚠️ 不可以分段一抓完就蓋（userscript 坑：荷蘭站「已標記完整」時還有 1,500 句在翻）。
-   * ⚠️ 有句子重試後仍放棄、或沒譯文的超過容許比例，就**不蓋章**——
-   *    已經翻好的仍在後端緩衝裡，只是這支不算完整，佇列會記成失敗讓人重跑（鐵則 37、38）。
-   * ⚠️ 等待有上限（鐵則 3）。
-   */
-  function harvestStampWhenSettled(cid, segCount, myGen) {
-    Object.assign(harvestStamp, { cid, state: 'waiting', note: '等翻譯結束', segCount });
-    const t0 = Date.now();
-    const tick = async () => {
-      if (myGen !== harvestGen || cid !== contentId) { harvestStamp.state = 'aborted'; return; }
-      if (!harvestSettled()) {
-        if (Date.now() - t0 > STAMP_SETTLE_MAX_MS) {
-          Object.assign(harvestStamp, { state: 'failed', note: '翻譯 10 分鐘仍未結束' });
-          evWarn('🚜 收割：翻譯 10 分鐘仍未結束，這支不蓋完整標記');
-          return;
-        }
-        setTimeout(tick, 3000);
-        return;
-      }
-      const missing = harvestMissing();
-      const tol = Math.max(20, Math.floor(sessionKeys.size * STAMP_BLOCK_TOL));
-      if (state.dropped || missing > tol) {
-        Object.assign(harvestStamp, { state: 'incomplete', note: `${missing} 句沒有譯文、${state.dropped} 句放棄` });
-        evWarn(`🚜 收割不完整（${harvestStamp.note}），不蓋完整標記；已翻的部分仍在共用快取`);
-        return;
-      }
-      const lines = {};
-      for (const k of sessionKeys) { const zh = memo.get(k); if (zh) lines[k] = zh; }
-      const times = {};
-      for (const k of Object.keys(lines)) { const sec = harvestTimes.get(k); if (sec !== undefined) times[k] = Math.round(sec * 10) / 10; }
-      for (let i = 1; i <= 3; i++) {
-        const res = await send({
-          type: 'harvestStamp', cid, lines, times, segCount, slug: location.pathname,
-          v: 'ext-' + EXT_VERSION,
-        });
-        const r = (res.ok && res.result) || {};
-        if (myGen !== harvestGen) { harvestStamp.state = 'aborted'; return; }
-        if (r.ok && r.segCount >= segCount) {
-          Object.assign(harvestStamp, { state: 'ok', note: `後端 ${r.total} 句（本次新增 ${r.added}、擋下 ${r.rejected}、時間軸 ${r.timed || 0} 句）` });
-          evOk(`🚜 ✅ 已蓋完整標記：${segCount} 段／${harvestStamp.note}`);
-          return;
-        }
-        harvestStamp.note = r.error || r.reason || '(未知)';
-        // 401 重試也沒用（權杖錯了）
-        if (r.status === 401) break;
-        await new Promise((ok) => setTimeout(ok, 5000 * i));
-      }
-      harvestStamp.state = 'failed';
-      evWarn(`🚜 完整標記送不出去：${harvestStamp.note}`);
-    };
-    setTimeout(tick, 3000);
-  }
-
-  /**
-   * 🎯 重收目前這一支（＝userscript 的「立即整軌預抓」）：後端說已完整也照樣整軌抓一次、翻完重新蓋章。
-   * 用在「懷疑這支的快取缺句」——可疑標記、使用者回報某段沒字幕。已翻過的句子從共用快取拿，不重付。
-   */
-  function forceHarvest() {
-    if (!harvestOn) return '沒有收割權杖';
-    if (!contentId) return '這一頁沒有影片';
-    if (harvestInFlight) return '這一支正在收割中';
-    state.harvestSkipped = false; harvestBundleComplete = false;
-    state.segFetched = 0; state.segFailed = 0; state.dropped = 0; state.harvestDone = false;
-    seenSegments.clear();
-    Object.assign(harvestStamp, { cid: '', state: '', note: '' });
-    evInfo('🎯 重收這一支（略過「已完整」判斷）');
-    startPrefetch(contentId, 0, true);
-    return '';
-  }
-
-  /** 收割佇列接手這一頁：切到全速。已經在抓的那一輪也立刻加開 worker。 */
-  function harvestFastPace() {
-    if (!harvestOn || harvestFast) return;
-    harvestFast = true;
-    evInfo(`🚜 收割佇列接手：抓取改為 ${HARVEST_FETCH_CONCURRENCY} 條並行、間隔 ${HARVEST_FETCH_GAP_MS}ms，不讓路給影片`);
-    if (fetchBoost) fetchBoost();
-  }
-
-  // ---- 前導收割模式（管理版，2026-10-24 從測試版移過來）----
-  // Ray 的電腦開管理版看直播：這個分頁貼直播邊緣、不延遲、批次等 leaderWinMs、每 30 秒送心跳。
-  // 其他觀眾延遲 45 秒，他們的句子到的時候，這裡翻好的早就在 SubtitleRoom 裡了。
-  // **預設開**——以前要在 Console 打指令，R18 FP2 開場就因為少打／打錯讓觀眾自己翻了一段。
-  // 心跳與翻譯都帶收割權杖（sw.js HARVEST_PATHS）：不靠授權碼，成本記在 'harvest'。
-  noLiveDelay = true;
-  var leaderBeatCid = null;   // 最近一次送過心跳的 cid（var：checkContentChange／pagehide 在上面就用到）
-  async function leaderLoad() {
-    try {
-      const o = (await chrome.storage.local.get('plLeader')).plLeader || {};
-      // 沒有收割權杖的管理版不翻譯（sw.js api() 擋下），當然也不算前導端
-      leaderMode = harvestOn && o.on !== false;
-      if (Number(o.win) >= 5 && Number(o.win) <= 50) leaderWinMs = Number(o.win) * 1000;
-    } catch (e) { leaderMode = harvestOn; }
-    if (!leaderMode && leaderBeatCid) leaderBye(leaderBeatCid);
-    applyLiveDelay();
-    evInfo(!harvestOn ? '🎯 前導收割模式：關（沒有收割權杖）'
-      : leaderMode ? `🎯 前導收割模式：開（不延遲畫面、直播批次等 ${leaderWinMs / 1000} 秒、每 30 秒送心跳）`
-        : '🎯 前導收割模式：關（__pitlingo.leader(true) 打開）');
-  }
-  function leaderStatus() {
-    const d = liveDelay.status();
-    return { leaderMode, windowSec: leaderWinMs / 1000, live: !!state.isLive, delayEnabled: d.enabled, delayActive: d.active, leaderSeen };
-  }
-  setInterval(() => {
-    if (leaderMode && state.isLive && contentId) { send({ type: 'leaderBeat', cid: contentId }); leaderBeatCid = contentId; }
-  }, 30000);
-  // 前導端**主動**離開（關分頁、換影片、關掉前導模式）時告訴後端（2026-10-24，R18 FP2）：
-  // 場次結束 Ray 先關 A、B 還開著，後端兩分鐘後就寄「前導端不在」——那是 Ray 自己關的，不是故障。
-  // 當機、斷網、電腦睡著不會送這一聲，所以那些情況照樣告警。
-  function leaderBye(cid) {
-    leaderBeatCid = null;
-    send({ type: 'leaderBeat', cid, bye: true });
-    evInfo(`🎯 前導端離開 cid ${cid}（已通知後端，不發告警）`);
-  }
-
-  // 直播結束 → 回 F1TV 首頁等下一場（2026-10-25 Ray，R18 FP3）。
-  // F1TV 在直播結束後會顯示「Starts in N ✕」倒數，然後**自己播下一支推薦影片**（FP3 播了 F1A 精華）。
-  // 管理版會把那一支當成新影片去收割（用收割權杖、算收割成本），A 的 FP3 診斷也被換掉了。
-  // 兩道：①看到倒數、影片已經不在播 → 直接回首頁（倒數根本不讓它跑完）；
-  //       ②倒數的字樣哪天改了：前導中的那一支換成別支、而且最近沒有人按過鍵盤滑鼠 → 一樣回首頁。
-  // ⚠️ 只在「剛才還是前導端」的那一頁生效：自己點別支（有真的點擊）、收割佇列換頁（整頁導覽，prev 是空的）都不受影響。
-  // ⚠️ 倒數判斷要加「影片沒在播」：直播中頁面上可能有別的「Starts in」（例如下一場的預告卡），不可以把前導端踢出直播。
-  // var：checkContentChange 在上面就會呼叫 userActedRecently（與 leaderBeatCid 同理，避免 TDZ）
-  var F1TV_HOME = 'https://f1tv.formula1.com/';
-  var USER_ACT_MS = 8000;
-  var lastUserActAt = 0;
-  var wentHome = false;
-  /** 前導端直播中拿不到影片編號多久就重新整理（見 flushPending） */
-  var LEADER_NOCID_RELOAD_MS = 120000;
-  var LEADER_NOCID_RELOAD_MAX = 2;
-  function leaderNoCidReload() {
-    let n = 0;
-    try { n = Number(sessionStorage.getItem('plNoCidReload')) || 0; } catch (e) { /* noop */ }
-    if (n >= LEADER_NOCID_RELOAD_MAX) {
-      if (!state.noCidGaveUp) { state.noCidGaveUp = true; evErr(`🎯 前導端重新整理 ${n} 次仍拿不到影片編號，停止重試（這一頁不翻譯）`); }
-      return;
-    }
-    try { sessionStorage.setItem('plNoCidReload', String(n + 1)); } catch (e) { /* noop */ }
-    evErr(`🎯 前導端 ${Math.round(LEADER_NOCID_RELOAD_MS / 60000)} 分鐘拿不到影片編號 → 送診斷後重新整理（第 ${n + 1} 次）`);
-    leaderFinalDiag('拿不到影片編號，重新整理前').then(() => location.reload());
-  }
-  /** 前導端離開一頁之前送一份自動診斷（R18 排位：分頁跳走後收割端的紀錄全部消失，報告沒送到）。最多等 4 秒 */
-  function leaderFinalDiag(why) {
-    return Promise.race([
-      sendAutoDiag(why),
-      new Promise((r) => setTimeout(r, 4000)),
-    ]).catch(() => {});
-  }
-  var countdownSeen = 0;   // 連續看到倒數的秒數：直播短暫卡頓＋頁面剛好有別的倒數卡，不可以一次就踢出直播
-  for (const t of ['pointerdown', 'keydown']) {
-    window.addEventListener(t, (e) => { if (e.isTrusted) lastUserActAt = Date.now(); }, true);
-  }
-  function userActedRecently() { return Date.now() - lastUserActAt < USER_ACT_MS; }
-  function leaderGoHome(why) {
-    if (wentHome) return;
-    wentHome = true;
-    // 自動開直播（harvest.js autoLive）回到首頁後不可以又點回這一場的重播
-    const ended = leaderBeatCid || contentId;
-    if (ended) {
-      try {
-        chrome.storage.local.get('plAutoLiveEnded', (o) => {
-          const list = ((o && o.plAutoLiveEnded) || []).filter((x) => x !== String(ended)).slice(-20);
-          chrome.storage.local.set({ plAutoLiveEnded: list.concat(String(ended)) });
-        });
-      } catch (e) { /* 只是少一筆紀錄：autoLive 另外用「只在場次時間內」擋 */ }
-    }
-    if (leaderBeatCid) leaderBye(leaderBeatCid);
-    evInfo(`🏁 ${why} → 回 F1TV 首頁等下一場`);
-    // 離開前先送一份診斷：換頁之後這一頁的時間軸就沒了
-    leaderFinalDiag('前導端離開這一場：' + why).then(() => location.assign(F1TV_HOME));
-  }
-  function autoplayCountdownShown() {
-    for (const el of document.querySelectorAll('button, a, div, span')) {
-      if (el.children.length > 3) continue;   // 只看小元素：大容器的 textContent 會把整頁的字都算進來
-      if (/^\s*Starts in\s*\d+\s*$/i.test(el.textContent || '')) return true;
-    }
-    return false;
-  }
-  function leaderAutoplayCheck() {
-    if (!leaderBeatCid || wentHome || isActuallyPlaying()) { countdownSeen = 0; return; }
-    countdownSeen = autoplayCountdownShown() ? countdownSeen + 1 : 0;
-    if (countdownSeen >= 3) leaderGoHome('直播結束，F1TV 開始倒數自動播下一支');
-  }
-  setInterval(leaderAutoplayCheck, 1000);
-
-  window.__plAdmin = {
-    forceHarvest,
-    fastPace: harvestFastPace,
-    // 正式場次優先（harvest.js alPreferMain）離開節目時走同一條路：記成播完、送 bye、送最後一份診斷
-    goHome: (why) => leaderGoHome(why),
-    snapshot: () => ({
-      cid: contentId, phase, harvestOn, isLive: !!state.isLive,
-      playlistSegs: state.playlistSegs, segFetched: state.segFetched, segFailed: state.segFailed,
-      harvestInFlight, harvestSkipped: state.harvestSkipped, harvestDone: state.harvestDone,
-      bundleComplete: harvestBundleComplete,
-      wanted: sessionKeys.size, missing: harvestMissing(), pending: pending.size, inflight,
-      dropped: state.dropped, blocked: state.blocked, errors: state.errors, translated: state.translated,
-      stamp: Object.assign({}, harvestStamp),
-      // 'none'＝攔到 master 而且裡面沒有字幕軌（真的沒字幕）；'unknown'＝連 master 都沒看到（播放器沒起來）
-      subTrack: subtitleTrackVerdict(),
-    }),
-    // 後台「即時狀態」看收割端（2026-10-30 Ray：「管理面板上有的都要有，也要有收割端目前在直播的幾分幾秒」）。
-    // 播放位置讀進度條（鐵則 63：直播的 video.currentTime 是假象）；凍住（A12）時進度條不動，另附影片時間
-    live: () => {
-      const v = document.querySelector('video');
-      const sb = document.querySelector('.tm-ui-seekbar');
-      const num = (a) => { const n = sb ? Number(sb.getAttribute(a)) : NaN; return Number.isFinite(n) && n >= 0 ? n : null; };
-      const ld = liveDelay.status();
-      return {
-        autoLive: adminAutoLive, leaderMode, leaderBeat: !!leaderBeatCid, leaderSeen,
-        raf: adminRafRate, vis: document.visibilityState,
-        win: [window.screenX, window.screenY, window.outerWidth, window.outerHeight],
-        video: v ? { paused: !!v.paused, t: Math.round(v.currentTime * 10) / 10 } : null,
-        seek: { now: num('aria-valuenow'), max: num('aria-valuemax') },
-        behind: ld.behind === undefined ? null : ld.behind, frozen: !!ld.frozen, frozenTimes: ld.frozenTimes || 0,
-        caption: String(collectCaption() || '').slice(0, 200),
-      };
-    },
-  };
-  /* @admin-only:end */
-
-  /* @test-only:start */
-  // =========================================================================
-  // 測試版的掛鉤（**正式版建置時整段移除**，tools/build-extension.js）
-  //
-  // 語音辨識字幕等測試功能寫在 src/test/ 的獨立檔案裡，只有測試版 manifest 會注入。
-  // 它們透過這裡拿到輪詢、原生字幕、診斷報告、HUD 與訊息——主程式不必知道它們的存在。
-  // ⚠️ 掛鉤裡的例外一律吞掉：測試功能壞掉不可以拖垮字幕本身。
-  // =========================================================================
-  window.__plTest = {
-    poll: [], native: [], diag: [], hud: [], message: [],
-    api: {
-      subtitleTrackVerdict: () => subtitleTrackVerdict(),
-      mainVideoRect: () => mainVideoRect(),
-      isLive: () => !!state.isLive,
-      contentId: () => contentId,
-    },
-  };
-  function plTestHook(kind, arg) {
-    const list = window.__plTest && window.__plTest[kind];
-    if (!list) return;
-    for (const fn of list) { try { fn(arg); } catch (e) { /* 測試功能壞掉不影響主程式 */ } }
-  }
-
-  const TESTING = {
-    // ---- 強制觸發 ----
-    prefetch: () => startPrefetch(contentId, 0, true),   // 強制重抓整支，繞過跳過判斷
-    reloadConfig: () => applyRemoteConfig(true),          // 立刻重讀遠端設定，不等 60 秒
-    markComplete: () => send({ type: 'markComplete', cid: contentId, segCount: state.playlistSegs }),
-    refreshBundle: async () => {
-      const r = await send({ type: 'getBundle', cid: contentId, force: true });
-      const b = (r.ok && r.bundle) || {};
-      console.log(`後端：${Object.keys(b.lines || {}).length} 句，segCount ${b.segCount || 0}`);
-      return b;
-    },
-
-    // ---- 內部狀態 ----
-    detect: () => detect,                 // 偵測來源統計（observer vs 輪詢）
-    batches: () => batchStats,            // 每個批次的句數與耗時
-    manifests: () => manifests.map((m) => ({ url: m.url, bytes: m.bytes, held: !!m.body })),
-    memo: () => memo,
-    pending: () => Array.from(pending.values()),
-    settings: () => settings,
-    site: () => site,
-
-    // ---- 模擬 ----
-    // 假裝畫面出現這句字幕，用來單獨測翻譯與顯示路徑，不用等影片播到
-    feed: (en) => { handleCaption(String(en || '')); return '已送入：' + en; },
-    // 假裝分頁被節流過，驗證停擺偵測會不會正確重掛
-    stall: () => { lastPollAt = Date.now() - STALL_MS - 1000; return checkPollStall(); },
-
-    // ---- 延遲畫面的可行性探針（使用者要求，獨立於正常播放路徑）----
-    //
-    // ⚠️ **結論先寫在這裡：要延遲畫面，不需要碰 MediaSource。**
-    //
-    //    使用者的想法是「稍微延緩畫面輸出，讓譯文趕得上」。方向是對的，
-    //    但直接動 MediaSource 是坑 #8 明令禁止的——那是影片本身，
-    //    弄壞的後果是整支影片播不出來，而且很難查。
-    //
-    //    直播有 DVR 視窗（F1TV 的直播可以往回拉）。只要把播放頭往回移 N 秒，
-    //    畫面就是 N 秒前的內容——**這正是「延遲畫面輸出」，而且完全不碰
-    //    MediaSource，只用標準的 `video.currentTime`。**
-    //
-    //    `dvr()` 先回答「有沒有可以往回的空間」，`delay(n)` 才真的動。
-    //    ⚠️ 兩支都只是**探針**，不接進正常播放路徑；確認可行之前不要自動化。
-    dvr: () => {
-      const v = document.querySelector('video');
-      if (!v) return { error: '找不到 video 元素' };
-      const r = (tr) => Array.from({ length: tr.length }, (_, i) => [+tr.start(i).toFixed(2), +tr.end(i).toFixed(2)]);
-      const seek = r(v.seekable);
-      const live = seek.length ? seek[seek.length - 1][1] : null;
-      const head = seek.length ? seek[0][0] : null;
-      return {
-        isLive: state.isLive,
-        currentTime: +v.currentTime.toFixed(2),
-        seekable: seek,
-        buffered: r(v.buffered),
-        // 可以往回多少秒＝延遲畫面的預算上限
-        dvrDepthSec: (live !== null && head !== null) ? +(live - head).toFixed(1) : null,
-        behindLiveSec: live !== null ? +(live - v.currentTime).toFixed(1) : null,
-        playbackRate: v.playbackRate,
-        paused: v.paused,
-        readyState: v.readyState,
-      };
-    },
-
-    delay: (sec) => {
-      const n = Math.max(1, Math.min(60, Number(sec) || 10));
-      const v = document.querySelector('video');
-      if (!v) return { error: '找不到 video 元素' };
-      const before = v.currentTime;
-      const seek = v.seekable;
-      const head = seek.length ? seek.start(0) : 0;
-      const target = before - n;
-      if (target < head + 1) {
-        return { error: `往回 ${n} 秒會超出 DVR 視窗（最早只能到 ${head.toFixed(1)}）`, before, head };
-      }
-      v.currentTime = target;
-      // 回報**之後**的狀態要等一下，seek 不是同步完成的。
-      return new Promise((resolve) => setTimeout(() => resolve({
-        requested: n,
-        before: +before.toFixed(2),
-        after: +v.currentTime.toFixed(2),
-        actuallyMoved: +(before - v.currentTime).toFixed(2),
-        paused: v.paused,
-        readyState: v.readyState,
-        note: '若 readyState >= 3 且 paused=false，代表往回拉之後仍然正常播放',
-      }), 1500));
-    },
-
-    delayStatus: () => liveDelay.status(),
-    help: () => {
-      console.log([
-        '【正式版保留】',
-        '  __pitlingo.diag()            匯出完整診斷（回報問題用這個）',
-        '  __pitlingo.autoDiag(10)      每 10 分鐘自動送一份診斷（0 關閉；不帶參數＝查狀態）',
-        '  __pitlingo.events()          事件時間軸',
-        '  __pitlingo.state             目前狀態',
-        '  __pitlingo.peek()            現在畫面上抓到什麼英文',
-        '  __pitlingo.debug(true)       開關詳細日誌',
-        '  __pitlingo.hud(true)         即時狀態面板（設定頁也可以勾）',
-        '  __pitlingo.live()            這一場自動量到的數字（提前量／掉幀／DVR／卡頓）',
-        '',
-        '【上線前移除 —— __pitlingo.t.*】',
-        '  t.prefetch()                 強制重抓整支（繞過跳過判斷）',
-        '  t.reloadConfig()             立刻重讀遠端設定',
-        '  t.markComplete()             手動標記完整收割',
-        '  t.refreshBundle()            強制重讀後端 bundle 並印出句數與 segCount',
-        '  t.detect()                   偵測來源統計',
-        '  t.batches()                  每個批次的句數與耗時',
-        '  t.manifests()                攔到的 manifest 清單',
-        '  t.memo() / t.pending()       本機快取 / 待翻佇列',
-        '  t.feed("Box box box")        假裝畫面出現這句，測翻譯與顯示',
-        '  t.stall()                    假裝被節流，測停擺偵測',
-        '  t.dvr()                      直播可以往回拉多少秒（延遲畫面的預算）',
-        '  t.delay(10)                  把畫面往回拉 10 秒，看還能不能正常播',
-      ].join('\n'));
-      return '見上方';
-    },
-  };
-  /* @test-only:end */
+  
 
   window.__pitlingo = {
     // ---- 正式版也要保留 ----
@@ -4659,10 +4114,7 @@
     },
     events: () => { console.log(eventLog.join('\n')); return eventLog.length; },
     peek: () => collectCaption(),
-    /* @test-only:start */
-    // 詳細日誌印到 Console。**只在測試版**（2026-09-17 使用者決定）；正式版的詳細日誌只進診斷報告
-    debug: (on) => { debugOn = on !== false; console.log('[PitLingo] 詳細日誌：' + (debugOn ? '開啟' : '關閉')); return debugOn; },
-    /* @test-only:end */
+    
     // 即時狀態面板。**正式版也保留**——它與 diag() 同一類：
     // 回報問題時「現在畫面上是什麼狀況」比事後的時間軸好用太多。
     //
@@ -4678,25 +4130,8 @@
       try { chrome.storage.local.set({ settings }); } catch (e) { /* 分頁正在關閉 */ }
       return v;
     },
-    /* @admin-only:start */
-    // 前導收割模式（管理版，預設開）。**不帶參數只回狀態、不改設定**——
-    // 測試版時代 leader() 不帶參數＝關閉，R18 FP2 就這樣被關掉過（LIVE-TEST.md R18）。
-    // leader(true) 開、leader(true, 20) 指定批次秒數（5～50）、leader(false) 關。存在本機，重新整理後仍然有效
-    leader: async (on, win) => {
-      if (on !== undefined) {
-        await chrome.storage.local.set({ plLeader: { on: !!on, win: Number(win) || leaderWinMs / 1000 } });
-        await leaderLoad();
-      }
-      const s = leaderStatus();
-      console.log('[PitLingo] 前導收割模式：' + (s.leaderMode ? `開（批次 ${s.windowSec} 秒）` : '關') + '　延遲畫面：' + (s.delayEnabled ? '開' : '關'));
-      return s;
-    },
-    /* @admin-only:end */
-    /* @test-only:start */
-    // 這一場到目前為止量到的直播數字。**只在測試版**（2026-09-17 使用者決定）；
-    // 正式版照常量，數字放在診斷報告的「直播實測自動採樣」
-    live: () => { const s = ltSummary(); console.log(s); return s; },
-    /* @test-only:end */
+    
+    
     get state() {
       return Object.assign({
         contentId, memo: memo.size, pending: pending.size,
@@ -4705,91 +4140,13 @@
     },
 
     // ---- 測試工具：只在測試版存在（正式版建置時移除）----
-    /* @test-only:start */
-    t: TESTING,
-    help: TESTING.help,
-    /* @test-only:end */
+    
   };
   // ⚠️ __pitlingo 在擴充功能的隔離環境裡。Console 預設是頁面環境（top），直接打會是 not defined——
   //    要先把 Console 左上角的 top 切到 PitLingo。
-  /* @test-only:start */
-  evInfo('測試版：F12 → Console 左上角把 top 切到 PitLingo，再打 `__pitlingo.help()` 看可用指令');
-  /* @test-only:end */
+  
 
-  /* @test-only:start */
-  // =========================================================================
-  // 目錄頁的翻譯覆蓋標記（handoff 9.1 #18，2026-10-06）
-  //
-  // F1TV 的影片卡片上標「完整繁中／部分繁中／無官方字幕」，讓使用者點進去之前就知道。
-  // 資料來自 /v1/coverage（後端從共用快取的摘要算，每個機房快取 30 分鐘）。
-  // 沒有標記＝還沒有人看過，看的時候即時翻——那不是壞事，所以不標。
-  //
-  // ⚠️ **測試版功能**：進正式版前要問過 Ray（工作規則 7）。
-  // ⚠️ 用輪詢不用 MutationObserver 當主力（鐵則 4：SPA 會重建 DOM），而且輪詢有上限（鐵則 3）。
-  // ⚠️ 只加一個小標籤、不改卡片的版面；讀網址用 getAttribute，不碰任何文字內容。
-  // =========================================================================
-  const COV_LABEL = {
-    ready: ['完整繁中', '#1f9d55'],
-    partial: ['部分繁中', '#b7791f'],
-    nosub: ['無官方字幕', '#6b7280'],
-  };
-  const covAsked = new Set();       // 問過的 cid：問過就不再問（不論有沒有結果）
-  const covMap = new Map();
-  let covBusy = false;
-  let covRounds = 0;
-  const COV_MAX_ROUNDS = 2000;      // 每 3 秒一輪，約 100 分鐘後停
-  const COV_MAX_CIDS = 1500;        // 一個分頁最多問這麼多支
-
-  function covCidOf(a) {
-    const m = String(a.getAttribute('href') || '').match(/\/detail\/(\d{1,20})(?:[/?#]|$)/);
-    return m ? m[1] : '';
-  }
-
-  function covPaint(a, st) {
-    const lab = COV_LABEL[st];
-    if (!lab || a.querySelector(':scope > .pl-cov')) return;
-    const b = document.createElement('span');
-    b.className = 'pl-cov';
-    b.textContent = lab[0];
-    b.style.cssText = 'position:absolute;top:6px;left:6px;z-index:5;padding:2px 6px;border-radius:4px;'
-      + 'font:600 11px/1.4 system-ui,sans-serif;color:#fff;pointer-events:none;opacity:.92;background:' + lab[1];
-    try { if (getComputedStyle(a).position === 'static') a.style.position = 'relative'; } catch (e) { /* noop */ }
-    a.appendChild(b);
-  }
-
-  async function covScan() {
-    if (covBusy || ++covRounds > COV_MAX_ROUNDS) return;
-    covBusy = true;
-    try {
-      const anchors = [...document.querySelectorAll('a[href*="/detail/"]')];
-      const need = [];
-      for (const a of anchors) {
-        const cid = covCidOf(a);
-        if (!cid) continue;
-        if (covMap.has(cid)) covPaint(a, covMap.get(cid));
-        else if (!covAsked.has(cid) && need.length < 100 && covAsked.size < COV_MAX_CIDS) {
-          need.push(cid);
-          covAsked.add(cid);
-        }
-      }
-      if (!need.length) return;
-      const r = await send({ type: 'coverageLookup', cids: need });
-      if (!r.ok) return;            // 失敗不重問（covAsked 已記），避免每 3 秒打一次壞掉的端點
-      for (const [c, st] of Object.entries(r.map || {})) covMap.set(c, st);
-      for (const a of anchors) {
-        const c = covCidOf(a);
-        if (covMap.has(c)) covPaint(a, covMap.get(c));
-      }
-    } finally {
-      covBusy = false;
-    }
-  }
-
-  function coverageBadgesStart() {
-    covScan();
-    setInterval(covScan, 3000);
-  }
-  /* @test-only:end */
+  
 
   boot();
 })();

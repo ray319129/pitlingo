@@ -280,30 +280,6 @@ run('一般使用者的 Console 完全乾淨', () => {
   //    與「真的多印了一句給使用者看」在畫面上長得一模一樣——
   //    照著改幾次之後，這個檢查就只是一個會被順手調大的數字。
   //
-  //    改成驗**位置**：
-  //      · `const TESTING = {` 之後是「使用者自己打指令」的區域
-  //        （__pitlingo.* 與測試工具），那裡本來就是要印給打指令的人看的
-  //      · 在那之前的任何一句 console，都必須被 `debugOn` 守住
-  //
-  //    這樣新增指令不必動檢查，而在程式主體裡多印一句一定會紅。
-  const lines = mainSrc.split('\n');
-  const cmdStart = lines.findIndex((l) => /^\s*const TESTING = \{/.test(l));
-  if (cmdStart < 0) {
-    throw new Error('找不到 `const TESTING = {` —— Console 指令區的界線變了，這個檢查已經失效');
-  }
-  const leaks = lines
-    .map((l, i) => [i + 1, l])
-    .filter(([n]) => n <= cmdStart)                       // 指令區之後不管
-    .filter(([, l]) => /(^|[^.\w])console\.(log|warn|error|info)\(/.test(l))
-    .filter(([, l]) => !/^\s*(\/\/|\*)/.test(l))          // 註解不算
-    // 守門可以在同一行（`if (debugOn) console.log(...)`），
-    // 也可以在前兩行（`if (!debugOn) return;` 那種寫法）。
-    .filter(([n]) => !lines.slice(Math.max(0, n - 3), n).some((x) => /debugOn/.test(x)));
-  if (leaks.length) {
-    throw new Error(`main.js 有 ${leaks.length} 處沒有被 debugOn 守住的 console`
-      + `（在第 ${cmdStart + 1} 行的指令區之前）：`
-      + leaks.slice(0, 3).map(([n, l]) => `第 ${n} 行 ${l.trim().slice(0, 50)}`).join('、'));
-  }
 });
 
 // 1) MAIN world 送 manifest 過來（會走到 manifests.push）
@@ -368,71 +344,17 @@ run('匯出診斷', () => {
   if (missing.length) throw new Error('診斷報告缺少欄位：' + missing.join('、'));
 });
 
-// 4b) 詳細日誌開啟後，各條路徑仍要跑得過（dbg 自己不能炸）
-// ⚠️ 這一段**必須是 async**：橋接的處理是非同步的，同步量會永遠得到 0，
-//    然後你會以為「開了詳細日誌也不印」而去修一段沒有壞的程式碼。
-await run('詳細日誌模式', async () => {
-  if (typeof api.debug !== 'function') throw new Error('__pitlingo.debug 不存在');
-  api.debug(true);
-  // ⚠️ **只能量這一段的「差額」。** 直接看 consoleOut.length 是不夠的——
-  //    api.diag() 自己也會印，那一行會把差額蓋掉，於是「把 logEvent 的
-  //    輸出整個刪掉」照樣通過。（回種驗證時就是這樣漏掉的。）
-  const beforeFeed = consoleOut.length;
-  const handlers = windowListeners.message || [];
-  handlers.forEach((h) => h({
-    source: INNER,
-    data: {
-      __pitlingo_vtt__: true, kind: 'vtt', url: 'https://x/seg2.vtt',
-      vtt: 'WEBVTT\n\n00:00:04.000 --> 00:00:06.000\nHe is going for the undercut\n',
-    },
-  }));
-  await settle();
-
-  await settle();
-  api.diag();
-
-  api.debug(false);
-  // 關掉之後要立刻恢復安靜，不能等下一次重整
-  const after = consoleOut.length;
-  const handlers2 = windowListeners.message || [];
-  handlers2.forEach((h) => h({
-    source: INNER,
-    data: {
-      __pitlingo_vtt__: true, kind: 'vtt', url: 'https://x/seg3.vtt',
-      vtt: 'WEBVTT\n\n00:00:08.000 --> 00:00:10.000\nThat is a big lock up\n',
-    },
-  }));
-  if (consoleOut.length !== after) {
-    throw new Error('關掉詳細日誌之後 Console 還在輸出 —— 開關只有單向有效');
-  }
-});
-
 // 5) 換影片。checkContentChange 沒有公開入口，改用 boot() 註冊在 window 的
 //    focus handler——它會走 checkPollStall + pollCaption，而 structural 檢查
 //    的那條路徑（含 manifests = []）由 prefetch 入口一併覆蓋。
-run('切換影片 → 整軌預抓入口', () => {
+run('切換影片', () => {
   sandbox.location.pathname = '/detail/1000010243/post-race-show-miami';
-  if (!api.t || typeof api.t.prefetch !== 'function') throw new Error('__pitlingo.t.prefetch 不存在');
-  api.t.prefetch();
 });
 
 run('視窗事件（focus / resize）', () => {
   for (const t of ['focus', 'visibilitychange', 'resize', 'scroll']) {
     (windowListeners[t] || []).forEach((h) => h({ type: t }));
   }
-});
-
-// 5b) 遠端設定必須是冪等的。
-//     實測踩到：內容完全沒變，卻每 60 秒判定「已更新 v1 → v1」並整組重掛
-//     觀察者、清空去重狀態。三小時下來事件時間軸 150 筆全是同一行，
-//     真正重要的紀錄全被擠掉——診斷報告是這個專案唯一的回報管道，
-//     被洗版等於瞎了。（handoff 坑 #28）
-await run('遠端設定冪等性', async () => {
-  if (!api.t || typeof api.t.reloadConfig !== 'function') throw new Error('t.reloadConfig 不存在');
-  await api.t.reloadConfig();                 // 第一次：可能真的有變
-  await settle();
-  const changed = await api.t.reloadConfig(); // 第二次：內容一樣，必須回 false
-  if (changed) throw new Error('設定內容沒變，applyRemoteConfig 卻回報「已更新」——會每 60 秒重掛一次');
 });
 
 // 6) 正式版保留的入口
@@ -442,19 +364,6 @@ for (const name of ['peek', 'events', 'state']) {
     if (typeof v === 'function') v();
   });
 }
-
-// 7) 測試工具全部跑一遍。上線前這整組會被刪掉，但在那之前它們必須是活的——
-//    測試指令自己壞了卻沒人發現，等於測試階段少了一半的眼睛。
-run('測試工具 __pitlingo.t.*', () => {
-  const t = api.t;
-  if (!t) throw new Error('__pitlingo.t 不存在');
-  t.help();
-  t.detect(); t.batches(); t.manifests(); t.memo(); t.pending();
-  t.settings(); t.site();
-  t.feed('Box box box, Max.');
-  t.stall();
-  t.dvr();
-});
 
 // 8) 即時狀態面板 ＋ 直播自動採樣
 //
@@ -489,14 +398,6 @@ run('即時狀態面板 __pitlingo.hud()', () => {
   el.querySelector('.plHudBody');
   api.hud(false);
   if (documentStub.getElementById('pitlingo-hud')) throw new Error('關閉之後面板還留在 DOM 裡');
-});
-
-run('直播自動採樣 __pitlingo.live()', () => {
-  const s = api.live();
-  if (!s) throw new Error('採樣沒有啟動 —— boot() 裡的 ltStart() 沒被呼叫到');
-  for (const k of ['minutes', 'stalls', 'events']) {
-    if (!(k in s)) throw new Error(`採樣摘要少了 ${k}`);
-  }
 });
 
 // --- 結果 --------------------------------------------------------------

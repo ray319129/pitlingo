@@ -15,23 +15,6 @@
 </head>
 <body>
 
-<!-- ========== 帳號狀態：打開就看得到 ==========
-     ⚠️ 登入**不是**使用的必要條件。這一條的用途是讓人知道
-     「登入可以把免費額度從 5 分鐘變成 15 分鐘」，不是把人擋在外面。 -->
-<!-- customerOnly：客戶用的東西（登入、配對、授權、購買、新手導覽）。管理版整個藏起來（options.css、admin/options-admin.js） -->
-<div id="acctBar" class="acctBar customerOnly">
-  <span id="acctName" class="acctName">未登入</span>
-  <button id="acctBtn" class="acctBtn">登入</button>
-</div>
-
-<!-- 帳號配對的確認碼：等待配對時放大標出來（2026-10-24 Ray：「四碼要更明顯，打開時就要標註出來」）。
-     使用者是在網頁上要輸入時才回來打開這個視窗——一打開第一眼就要看到碼，不可以只是一行小字 -->
-<div id="linkBox" class="linkBox customerOnly" hidden>
-  <span class="linkBoxLabel">帳號連結確認碼</span>
-  <span id="linkBoxCode" class="linkBoxCode"></span>
-  <span class="linkBoxHint">在剛打開的網頁登入後，輸入這 4 碼</span>
-</div>
-
 <header>
   <img src="../../icons/icon48.png" alt="" width="34" height="34">
   <div>
@@ -51,87 +34,49 @@
 </section>
 
 <!-- ========== 首次使用引導 ========== -->
-<section id="onboard" class="onboard customerOnly" hidden>
-  <h2>開始使用（兩個步驟）</h2>
+<section id="onboard" class="onboard" hidden>
+  <h2>開始使用（三個步驟）</h2>
   <ol class="steps">
+    <li>
+      <strong>在下方填入你的 Anthropic API key</strong>
+      <p class="hint">沒有金鑰就不會翻譯。一場兩小時的正賽約花 US$0.3～0.4（依 Anthropic 當時價格）。</p>
+    </li>
     <li>
       <strong>F1TV 的英文字幕（CC）會自動開啟</strong>
       <p class="hint">PitLingo 需要它開著才能顯示中文，進入每一支影片時會自動幫你打開。若畫面提示沒有字幕，到播放器右下角齒輪 → Subtitles → Language 選 English。</p>
     </li>
     <li>
       <strong>打開任一支影片</strong>
-      <p class="hint">其餘步驟皆為自動。首次觀看某支影片時會逐段翻譯，完成後同一支影片即可即時顯示。</p>
+      <p class="hint">其餘步驟皆為自動。重播會先把整支影片的字幕翻好；同一支影片看第二次直接用本機快取，不再花錢。</p>
     </li>
   </ol>
   <button id="onboardDone" class="secondary">完成</button>
 </section>
 
-<!-- @admin-only:start -->
-<!--
-  管理版狀態（2026-10-24 Ray：「管理版不用跟正式版一樣，管理版負責管理版的事」）。
-  管理版**只有一種身分：收割權杖**——不登入、不配對、不用授權碼、沒有免費額度；沒有權杖就不翻譯、不當前導端
-  （sw.js api() 擋下），不退回用個人授權，成本才不會混進客戶帳。內容由 ../admin/options-admin.js 填。
--->
-<section id="adminIdentity">
-  <h2>管理版</h2>
-  <div class="licRow"><span id="admTokenBadge" class="badge">收割權杖</span><span id="admTokenText">檢查中…</span></div>
-  <p class="hint" id="admLeader">前導收割模式：檢查中…</p>
-  <p class="hint">延遲畫面：<b>關</b>（管理版固定，前導端要貼直播邊緣）　·　收割佇列：F1TV 頁面按 <b>Alt+Shift+J</b></p>
-  <p class="hint">成本一律記在「收割」那一列。權杖在本頁最下面「🚜 管理版：收割」設定。</p>
-</section>
-<!-- @admin-only:end -->
 
-<!-- ========== 授權 ========== -->
-<section id="licSection" class="customerOnly">
-  <h2>授權</h2>
 
-  <div id="licActive" hidden>
-    <div class="licRow">
-      <span class="badge ok">已啟用</span>
-      <span id="licPlan"></span>
-    </div>
-    <p class="hint" id="licExp"></p>
-    <!--
-      比賽週通行證的細節。**買家要看得出自己買的是哪一場、還剩多久**——
-      只顯示一個日期，他分不出「荷蘭」與「荷蘭＋義大利」，
-      也不知道失效的那一刻是哪一場的開始。
-    -->
-    <div id="licGp" class="licGp" hidden></div>
-    <p class="hint">授權綁定<b>你的帳號</b>，不綁定特定裝置。更換電腦、重新安裝或更換瀏覽器時，登入同一個帳號即可使用，最多同時 3 台。登出帳號時這台的授權會暫停。</p>
-    <!-- 裝置管理只在網站「我的帳號」（登入就證明是擁有者，不限次數）。
-         2026-10-30 起擴充功能不再提供「只憑授權碼解除別台」（1.0.2）。 -->
-    <div class="row">
-      <a id="licDevices" class="secondary btnLink" href="https://pitlingo.com/account" target="_blank" rel="noopener">管理裝置</a>
-      <button id="licRemove" class="secondary">在這台停用並登出</button>
-    </div>
+<!-- ========== Anthropic API key（開源版：自備金鑰，沒有任何 PitLingo 伺服器）========== -->
+<section id="keySection">
+  <h2>Anthropic API key</h2>
+  <p class="hint">PitLingo 開源版用<b>你自己的</b> Anthropic API key 翻譯，費用直接記在你的 Anthropic 帳戶。
+    到 <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anthropic Console</a> 建立一把金鑰，貼在下面。</p>
+  <label class="field">
+    <span>API key</span>
+    <input id="apiKey" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+  </label>
+  <label class="field">
+    <span>模型<em class="opt">預設 claude-haiku-4-5（PitLingo 實測過的模型）</em></span>
+    <input id="model" placeholder="claude-haiku-4-5" autocomplete="off" spellcheck="false">
+  </label>
+  <div class="row wrap">
+    <button id="keySave">儲存並測試</button>
+    <button id="keyClear" class="secondary">清除金鑰</button>
   </div>
-
-  <!--
-    沒有授權時。**2026-10-30 起（1.0.2）沒有授權碼欄位**：授權以帳號為準，
-    用結帳信箱登入就會自動啟用。這一區只告訴他「下一步是什麼」——登入、認領，或購買。
-  -->
-  <div id="licInactive">
-    <p id="licHow" class="hint">已經購買？按最上方的「登入」，<b>用結帳時填寫的信箱</b>登入，授權就會自動啟用。</p>
-    <p id="licClaim" class="hint" hidden>這個帳號目前沒有授權。用別的信箱買的？到
-      <a href="https://pitlingo.com/account" target="_blank" rel="noopener">我的帳號</a>輸入購買信箱認領即可。</p>
-    <div class="row">
-      <span id="licMsg" class="result"></span>
-    </div>
-
-    <!--
-      購買入口。用 <a> 不用 <button>：這是離開擴充功能的導覽，不是頁面內的動作，
-      使用者也才能用中鍵開新分頁。
-    -->
-    <div class="buyBox">
-      <p class="hint">還沒有購買？</p>
-      <a class="buyBtn" href="https://pitlingo.com/buy" target="_blank" rel="noopener">
-        前往購買
-      </a>
-      <p class="hint">
-        比賽週通行證一場大獎賽一張　·　每天可免費試看：未登入 5 分鐘，登入後 15 分鐘
-      </p>
-    </div>
-  </div>
+  <div id="keyResult" class="rpResult" hidden></div>
+  <p class="hint">金鑰只存在這台電腦的瀏覽器（chrome.storage.local），只會送到 api.anthropic.com，不會傳給任何其他地方。
+    建議在 Console 替這把金鑰設定<b>每月花費上限</b>。</p>
+  <p class="hint" id="usageLine">　</p>
+  <div class="row"><button id="cacheClear" class="secondary">清除本機譯文快取</button></div>
 </section>
 
 <!-- ========== 顯示設定 ========== -->
@@ -243,115 +188,30 @@
 
 </details>
 
-<!-- @test-only:start -->
-<!--
-  語音辨識測試（**只在測試版出現**；正式版建置時整段移除，check-build 會驗）。
-  邏輯在 ../test/options-test.js。
--->
-<details class="adv" id="asrTest" hidden>
-  <summary>🧪 語音辨識字幕（測試版）</summary>
-  <p class="hint"><b>語音辨識實驗室</b>：聲音拿不拿得到、能不能靜音或倍速收割、收割逐字稿再整份翻譯、與官方字幕比對準確率。
-    在正在播放的 F1TV 分頁上點擴充功能圖示，填好測試金鑰後按下面這顆。</p>
-  <div class="row wrap"><button id="asrLab">開啟語音辨識實驗室</button></div>
-  <p class="hint">下面是另一種用法——即時字幕：擷取這個分頁的聲音，送去語音辨識再翻譯，用黃色框顯示在畫面上。
-    <b>請在正在播放的 F1TV 分頁上點擴充功能圖示，再按開始。</b>會產生語音辨識費用（後端有每日分鐘上限）。</p>
-  <label class="field"><span>測試金鑰（後端的 ASR_TEST_KEY）</span>
-    <input id="asrKey" type="password" autocomplete="off" spellcheck="false"></label>
-  <label class="field"><span>什麼時候顯示</span>
-    <select id="asrWhen">
-      <option value="always">一律顯示（與官方字幕並排比較）</option>
-      <option value="nocc">只在沒有官方字幕時（模擬實際產品）</option>
-    </select></label>
-  <label class="field"><span>時機</span>
-    <select id="asrTiming">
-      <option value="late">結果一到就顯示（直播看得到，但一定晚於聲音）</option>
-      <option value="aligned">對齊播放位置（搭配延遲畫面測試）</option>
-    </select></label>
-  <label class="field"><span>每段長度</span>
-    <select id="asrChunk">
-      <option value="4">4 秒（延遲較短，句子容易被切斷）</option>
-      <option value="5" selected>5 秒</option>
-      <option value="8">8 秒（句子較完整，延遲較長）</option>
-    </select></label>
-  <div class="row wrap">
-    <button id="asrStart">開始擷取</button>
-    <button id="asrStop" class="secondary">停止</button>
-  </div>
-  <p class="hint" id="asrStatus">未擷取</p>
-  <span id="asrMsg" class="result"></span>
-</details>
-<!-- @test-only:end -->
 
-<!-- @admin-only:start -->
-<!--
-  管理版：收割權杖（**只在管理版出現**；正式版與測試版建置時整段移除）。邏輯在 ../admin/options-admin.js。
--->
-<details class="adv" id="harvestAdmin" open hidden>
-  <summary>🚜 管理版：收割</summary>
-  <p class="hint">填入後端的 <b>HARVEST_TOKEN</b>。有了它，這台的翻譯不吃免費額度、成本記在「收割」那一列，
-    整軌收割完會蓋可信的完整標記。收割佇列的控制面板在 F1TV 頁面右上角（<b>Alt+Shift+J</b> 開關）。</p>
-  <label class="field"><span>收割權杖</span>
-    <input id="harvestToken" type="password" autocomplete="off" spellcheck="false"></label>
-  <div class="row wrap">
-    <button id="harvestSave">儲存</button>
-    <button id="harvestClear" class="secondary">清除</button>
-  </div>
-  <span id="harvestMsg" class="result"></span>
-</details>
-<!-- @admin-only:end -->
 
-<!-- ========== 疑難排解 ========== -->
+
+
+<!-- ========== 關於 ========== -->
 <details class="adv">
-  <summary>回報問題</summary>
-
-  <!--
-    先講延遲，再讓人填表。
-    實測 PitLingo 只替顯示加了約 4ms，那 0.5 秒是 F1TV 自己畫字幕的時機——
-    不先說清楚，光是「字幕慢半拍」就會佔掉大部分工單，真正的問題反而被淹沒。
-  -->
+  <summary>關於與疑難排解</summary>
   <div class="notice">
     <strong>關於字幕延遲</strong>
-    <p>F1TV 的英文字幕本身即比語音晚約 <b>0.5 秒</b>出現。本服務依據該英文字幕即時翻譯，
-    因此中文字幕會一併延後相同時間。此為正常現象，非軟體異常。</p>
-    <p>若遇到<b>字幕完全未顯示</b>、<b>字幕停止更新</b>或<b>翻譯內容明顯有誤</b>，
-    請於下方說明並送出診斷資訊。</p>
+    <p>F1TV 的英文字幕本身即比語音晚約 <b>0.5 秒</b>出現，中文字幕依據該英文字幕翻譯，因此會一併延後相同時間。</p>
   </div>
-
-  <label class="field">
-    <span>問題描述<em class="opt">必填</em></span>
-    <input id="rpNote" placeholder="例如：字幕中斷、翻譯內容有誤" maxlength="200" required>
-  </label>
-  <label class="field">
-    <span>聯絡方式<em class="opt">選填，供後續回覆使用（登入後自動帶入帳號 email）</em></span>
-    <input id="rpContact" placeholder="email 或 Discord 帳號" maxlength="120" autocomplete="email">
-  </label>
-
-  <div class="row wrap">
-    <button id="rpSend">傳送診斷資訊</button>
-    <button id="reloadCfg" class="secondary">重新載入設定</button>
-  </div>
-  <div id="rpResult" class="rpResult" hidden></div>
-
-  <p class="hint">
-    傳送內容為本擴充功能的運作狀態（版本、快取命中率、事件時間軸，以及目前觀看的影片網址）。
-    <b>不包含任何存取權杖或登入憑證。</b>
-    傳送前請先開啟 F1TV 分頁。
-  </p>
+  <p class="hint">遇到問題：在 F1TV 分頁按 F12 → Console 左上角把 <code>top</code> 切到 <b>PitLingo</b>，
+    執行 <code>__pitlingo.diag()</code>，把結果附在 GitHub issue 裡。</p>
   <p class="hint" id="ver"></p>
   <p class="hint">
-    <a href="https://pitlingo.com" target="_blank" rel="noopener">官方網站</a>　·
-    <a href="https://pitlingo.com/buy" target="_blank" rel="noopener">購買</a>　·
-    <a href="https://pitlingo.com/contact" target="_blank" rel="noopener">聯絡我們</a>　·
-    <a href="https://www.instagram.com/pitlingo/" target="_blank" rel="noopener">Instagram</a>　·
-    <a href="https://pitlingo.com/privacy" target="_blank" rel="noopener">隱私權政策</a>　·
-    <a href="https://pitlingo.com/terms" target="_blank" rel="noopener">使用條款</a>
+    <a href="https://github.com/ray319129/pitlingo" target="_blank" rel="noopener">GitHub（原始碼、回報問題）</a>　·
+    MIT 授權　·　非 Formula 1 官方產品
   </p>
 </details>
 
 <script src="../shared/normalize.js"></script>
 <script src="../shared/defaults.js"></script>
 <script src="options.js"></script>
-<!-- @test-only:start --><script src="../test/options-test.js"></script><!-- @test-only:end -->
-<!-- @admin-only:start --><script src="../admin/options-admin.js"></script><!-- @admin-only:end -->
+
+
 </body>
 </html>

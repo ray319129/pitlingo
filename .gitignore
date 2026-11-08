@@ -1,19 +1,11 @@
-# 機密：API key、token 一律放 .env／.dev.vars／wrangler secret，不進 repo
+# 機密：API key 一律不進 repo
 .env
 .env.*
-.dev.vars
-.dev.vars.*
 *.key
-secrets/
 
-# 建置與工具產物
-node_modules/
+# 打包產物
 dist/
-.wrangler/
-backend/.wrangler/
-
-# 固定測試資料（內容是 F1TV 字幕原文與譯文，只留在本機）
-tools/fixtures/
+node_modules/
 
 # 系統
 .DS_Store

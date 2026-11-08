@@ -1,15 +1,13 @@
-// ---------------------------------------------------------------------------
-// 翻譯用的 system prompt
-//
-// ⚠️ 兩個硬性條件，違反了都不會報錯，只會靜默劣化：
-//   1. 必須與 userscript 的 SYSTEM_PROMPT 逐字相同。否則同一句在兩個產物上會
-//      翻出不同結果，而共用快取不分來源，譯文品質變成看運氣。
-//   2. 必須 ≥ 4096 tokens，否則下面那個 cache_control 靜默失效，每次全額計費。
-//      v1.3 以前這裡只有 34 條術語（約 650 tokens），快取從來沒生效過。
-//
-// 兩者都由 `node tools/check-prompt.js` 把關，改動後務必執行。
-// ---------------------------------------------------------------------------
-const SYSTEM_PROMPT = `你是 F1 賽事轉播的即時字幕翻譯器。將輸入的英文轉播評論翻譯成台灣賽車圈慣用的繁體中文。
+/**
+ * 翻譯用的 system prompt（從 PitLingo 後端 backend/src/parts/01-prompt.js 原封不動搬過來）。
+ *
+ * ⚠️ 必須 ≥ 4,096 tokens：低於這個長度時 Anthropic 的 prompt 快取（cache_control）會靜默失效，
+ *    每一次呼叫都全額計費。刪減術語之前先用 count_tokens 量過。
+ */
+(function (root) {
+  'use strict';
+  root.PL = root.PL || {};
+  root.PL.SYSTEM_PROMPT = `你是 F1 賽事轉播的即時字幕翻譯器。將輸入的英文轉播評論翻譯成台灣賽車圈慣用的繁體中文。
 
 ═══════════════════════════════
 【輸出規則 — 最高優先】
@@ -548,4 +546,4 @@ sorry mate → 抱歉
 
 "That's a five-second penalty for the unsafe release."
 → 危險放行，五秒加罰`;
-
+})(typeof self !== 'undefined' ? self : this);

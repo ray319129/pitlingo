@@ -14,11 +14,6 @@
 
 (function (root) {
   'use strict';
-  // ⚠️ 換這個位址前，先確認 manifest 的 host_permissions 兩個都在。
-  //    api.pitlingo.com 是正式位址（換供應商時不用改所有已安裝的擴充功能），
-  //    workers.dev 保留是為了舊版還連得上——**在確認沒有用戶端使用之前不可移除**。
-  //    實際踩過：加子網域時 wrangler 預設關掉 workers.dev，所有安裝立刻斷線。
-  const BACKEND = 'https://api.pitlingo.com';
 
   const BUILT_IN_CONFIG = {
     version: 0,                       // 內建版本永遠是 0，遠端的一定比較新
@@ -35,7 +30,8 @@
     ],
     // 遠端設定拿不到時的備援。語意見 backend 的 REMOTE_CONFIG。
     // 直播延遲畫面（見 shared/live-delay.js）。後端連不上時也照樣延遲——前導收割的前提
-    liveDelay: { enabled: true, seconds: 45 },
+    // 開源版預設關閉：延遲畫面原本是為了讓「前導收割端」先翻好、觀眾直接拿共用快取，開源版沒有那一端
+    liveDelay: { enabled: false, seconds: 45 },
     freeTier: {
       seconds: 900,
       // 遊客（沒登入）的秒數。**不是懲罰，是讓「登入」有具體的理由**——
@@ -196,7 +192,6 @@
   }
 
   root.PL = root.PL || {};
-  root.PL.BACKEND = BACKEND;
   root.PL.BUILT_IN_CONFIG = BUILT_IN_CONFIG;
   root.PL.DEFAULT_SETTINGS = DEFAULT_SETTINGS;
   root.PL.siteConfigFor = siteConfigFor;
