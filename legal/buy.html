@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="zh-Hant" class="pl-hydrating">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Titillium Web：formula1.com 實際使用的內文字型（實測 189 處）。
+     **只影響拉丁字母**——中文沒有對應字符會落回系統字型，
+     那也正是 f1-boxbox（繁體中文 F1 站）的做法：中文不掛自訂字型。
+     ⚠️ 這是站上唯一的第三方請求，隱私權政策的第三方表格必須同步列出。 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Titillium+Web:wght@400;600;700&display=swap">
+<title>購買 — PitLingo</title>
+<!--
+  https://pitlingo.com/buy
+
+  ⚠️ 這頁有一個法定要件：**同意條款的勾選**。
+     七天鑑賞期的排除必須「經消費者事先同意」才成立
+     （通訊交易解除權合理例外情事適用準則 §2(5)）。
+     沒有這個勾選，排除條款無效，使用者仍可主張無條件退貨。
+     所以 checkout 端點也會再驗一次 agreed，不是只靠前端擋。
+-->
+<link rel="stylesheet" href="/site.css?v=afd7e0d5">
+</head>
+<body>
+<!-- SITE-HEADER：由 tools/site-chrome.js 產生，請勿直接修改 -->
+<script>try{if(localStorage.getItem('pl_motion')==='paused')document.documentElement.setAttribute('data-motion','paused')}catch(e){}</script>
+<header class="site-header">
+  <div class="inner">
+    <nav class="site-nav" aria-label="主要導覽">
+      <a class="nav-head" href="/">
+        <span class="nav-mark">PitLingo</span>
+      </a>
+      <div class="nav-tick" aria-hidden="true"><span>F1TV 英文 CC 即時翻成繁體中文 / 台灣用語 / 不用換平台 / 每天免費 15 分鐘 / F1TV 英文 CC 即時翻成繁體中文 / 台灣用語 / 不用換平台 / 每天免費 15 分鐘 / </span></div>
+      <div class="nav-list">
+        <a href="/"><i class="tc" aria-hidden="true"></i><span class="pos" aria-hidden="true">1</span><span class="nm">首頁</span></a>
+        <a href="/buy" aria-current="page"><i class="tc" aria-hidden="true"></i><span class="pos" aria-hidden="true">2</span><span class="nm">方案</span></a>
+        <a href="/faq"><i class="tc" aria-hidden="true"></i><span class="pos" aria-hidden="true">3</span><span class="nm">常見問題</span></a>
+        <a href="/account"><i class="tc" aria-hidden="true"></i><span class="pos" aria-hidden="true">4</span><span class="nm">我的帳號</span></a>
+        <a href="/contact"><i class="tc" aria-hidden="true"></i><span class="pos" aria-hidden="true">5</span><span class="nm">聯絡我們</span></a>
+      </div>
+      <a class="nav-cta" href="/#try">免費試用 15 分鐘</a>
+      <div class="nav-flow" aria-hidden="true"></div>
+      <div class="nav-rail" aria-hidden="true"><i></i></div>
+    </nav>
+    <a class="brand" href="/"><img src="/icon128.png" alt="" width="30" height="30"><span>PitLingo</span></a>
+  </div>
+</header>
+<!-- /SITE-HEADER -->
+<main class="page">
+
+<!--
+  標題區（2026-09-17 行銷改版）。與首頁同一套：眉標、大標、導言、信任標記。
+  ⚠️ 這裡**不寫任何價格數字**——價格由伺服器即時算（賽季票依剩餘場次浮動），
+     寫死在標題區就是下一次改價時的漂移。
+-->
+<section class="page-hero page-hero-photo" style="--hero-photo:url(/img/car-print.jpg);--hero-zoom:210%;--hero-pos:58% 52%">
+  <div class="wrap narrow-wrap">
+    <p class="eyebrow" data-edit="buy.hero.eyebrow">方案</p>
+    <h1 data-edit="buy.hero.h1">這個週末，每一句都看得懂。</h1>
+    <p class="lead" data-edit="buy.hero.lead">一場大獎賽一張通行證，自由練習到正賽全部包含；整季都想看，賽季通行證一次搞定。還沒決定？每天都能先免費試用——登入後 15 分鐘，不登入也能先看 5 分鐘。</p>
+    <ul class="pills checks" aria-label="購買說明">
+      <li data-edit="buy.hero.pill1">每天都能先免費試用</li>
+      <li data-edit="buy.hero.pill2">一次性購買，沒有自動續訂</li>
+      <li data-edit="buy.hero.pill3">信用卡付款後立即開通，登入就能用</li>
+    </ul>
+    <div class="cta-row">
+      <a class="btn" href="/#try" data-edit="buy.hero.try" data-edit-href="buy.hero.try">免費試用 15 分鐘</a>
+    </div>
+  </div>
+</section>
+
+<div class="page-body-bg">
+<div class="wrap narrow-wrap page-body">
+
+<p id="notice" class="notice" hidden></p>
+
+<!--
+  購買頁也要放示範影片。買家在掏錢之前最想確認的就是「實際長什麼樣」，
+  而這比任何文案都直接。`preload="none"` 同首頁：不點就不下載。
+-->
+<figure class="demo">
+  <video controls preload="none" playsinline
+         poster="/demo-2026-11b.jpg" width="1280" height="720">
+    <source src="/demo-2026-11b.mp4" type="video/mp4">
+    您的瀏覽器不支援影片播放。
+  </video>
+  <figcaption data-edit="buy.demo.caption">實際運作畫面（1 分鐘，含英文原聲）。字級與位置皆可自行調整。</figcaption>
+</figure>
+
+<!--
+  三個最高層級分類，都可以整體收合。
+
+  ⚠️ **比賽週通行證預設只顯示最近的兩場。** 一個賽季 23 站，全部攤開會把
+     購買頁淹掉，使用者連「有哪些選擇」都看不出來。已結束的更是要收起來——
+     那些買了也沒用（效期早就過了），留著只是為了讓人確認賽程沒漏。
+-->
+<details class="cat" id="catGp" open>
+  <summary><h2 class="secTitle" data-edit="buy.cat.gp.title">比賽週通行證</h2>
+    <span class="catHint" data-edit="buy.cat.gp.hint">一場大獎賽一張，自由練習到正賽全部包含，效期到下一場比賽週開始前</span></summary>
+
+  <h3 class="subTitle" data-edit="buy.cat.gp.upcoming">即將開始</h3>
+  <div id="gpUpcoming" class="plans"></div>
+  <div class="bar"><button type="button" id="gpMore" class="linkBtn" hidden></button></div>
+
+  <!-- ⚠️ 標題與說明由 buy.js 依內容改寫（見 renderRaces）。
+       「已停售」與「已結束」是兩件事：前者的買家還在使用中，
+       後者才是真的過期。寫死成「效期已過」會讓剛買完的人以為東西沒了。 -->
+  <details class="sub" id="catPast">
+    <summary><h3 class="subTitle" id="catPastTitle">已結束</h3>
+      <span class="catHint" id="catPastHint">效期已過，僅供查閱</span></summary>
+    <div id="gpPast" class="plans"></div>
+  </details>
+</details>
+
+<details class="cat cat-rec" id="catSeason" open>
+  <summary><h2 class="secTitle" data-edit="buy.cat.season.title">賽季通行證</h2>
+    <span class="recTag" data-edit="buy.cat.season.rec">多人推薦</span>
+    <span class="catHint" data-edit="buy.cat.season.hint">剩下的每一站一次涵蓋，不必逐場購買</span></summary>
+  <div id="plans" class="plans"></div>
+</details>
+
+<details class="cat" id="catSvc">
+  <summary><h2 class="secTitle" data-edit="buy.cat.svc.title">F1TV 代訂服務</h2>
+    <span class="catHint" data-edit="buy.cat.svc.hint">還沒有 F1TV？由我們代為完成訂閱手續</span></summary>
+  <p class="hint" data-edit="buy.cat.svc.body">不必自己摸索海外付款，由我們代為完成 F1TV 訂閱手續。<b>觀看時仍需自備 VPN</b>——F1TV 在台灣未提供服務，這點無法由代訂解決。</p>
+  <div id="services" class="plans"></div>
+</details>
+
+<!--
+  Pro 與 Premium 的差異。**表格與官方截圖並存**，兩者用途不同：
+    · 表格是主要內容——可搜尋、可翻譯、螢幕閱讀器讀得出來、手機不會糊
+    · 截圖是佐證——讓買家確認我們沒有寫錯官方的方案內容
+  只放截圖的話，手機使用者要放大才看得清楚；只放表格的話，
+  買家沒有辦法對照官方原文。
+-->
+<details class="compare">
+  <summary>Pro 與 Premium 差在哪？</summary>
+  <div class="compareBody">
+    <p class="hint">
+      兩者的直播、賽事內容與計時功能<b>完全相同</b>，
+      差別只在下方「Ultimate Live Immersion」這三項。
+    </p>
+
+    <div class="shots">
+      <figure>
+        <img src="/f1tv_pro_plan.jpg" alt="F1TV Pro 方案內容：Ultimate Live Immersion 三項為叉，其餘為勾" loading="lazy">
+        <figcaption>F1TV Pro（官方頁面）</figcaption>
+      </figure>
+      <figure>
+        <img src="/f1tv_premium_plan.jpg" alt="F1TV Premium 方案內容：全部項目皆為勾" loading="lazy">
+        <figcaption>F1TV Premium（官方頁面）</figcaption>
+      </figure>
+    </div>
+    <table>
+      <thead>
+        <tr><th>項目</th><th>Pro</th><th>Premium</th></tr>
+      </thead>
+      <tbody>
+        <tr class="grp"><td colspan="3">Ultimate Live Immersion</td></tr>
+        <tr><td>Multiview 多視角自訂畫面<em>Android 不支援</em></td><td class="no">✕</td><td class="yes">✓</td></tr>
+        <tr><td>4K UHD／HDR 畫質</td><td class="no">✕</td><td class="yes">✓</td></tr>
+        <tr><td>最多 6 台裝置同時觀看</td><td class="no">✕</td><td class="yes">✓</td></tr>
+
+        <tr class="grp"><td colspan="3">Official Live Stream</td></tr>
+        <tr><td>所有場次無廣告直播與隨選</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>車上鏡頭直播</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>車隊無線電直播</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>F2、F3、F1 學院、保時捷超級盃</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>比賽週末獨家節目與內容</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+
+        <tr class="grp"><td colspan="3">Essential Live Timing</td></tr>
+        <tr><td>即時計時、遙測、輪胎使用、車手位置圖</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>延遲重播</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>車隊無線電精選</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>獨家節目、紀錄片與賽事典藏</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="hint">以上為 F1TV 官方方案內容，如與官方公告不符以官方為準。</p>
+  </div>
+</details>
+
+<!--
+  購物車。**金額一律由後端 /v1/quote 算**——前端自己加總的話，
+  折抵規則一改就會跟結帳收的錢漂掉，而那是最直接的糾紛。
+-->
+<section id="cart" class="cart" hidden>
+  <h2 class="secTitle">購物車</h2>
+  <!--
+    表格式版面。欄位固定：商品／數量／單價／小計／移除。
+
+    ⚠️ **數量欄不是每一項都能調。** 比賽週通行證與共用帳號代訂都是
+       「一場一份」，買兩份不會延長任何東西，只是收兩次錢。
+       那些項目顯示的是純數字，沒有加減鈕——**不能給一個按了沒用的按鈕**。
+
+    ⚠️ 手機上表格會爆版，所以 640px 以下改成堆疊式（見 site.css）。
+  -->
+  <div class="cartTable" role="table" aria-label="購物車">
+    <div class="cartHead" role="row">
+      <span role="columnheader">商品</span>
+      <span role="columnheader">數量</span>
+      <span role="columnheader">單價</span>
+      <span role="columnheader">小計</span>
+      <span role="columnheader"><span class="sr">移除</span></span>
+    </div>
+    <div id="cartLines"></div>
+  </div>
+  <div id="cartAdj" class="cartAdj"></div>
+  <div class="cartTotal"><span>應付金額</span><strong id="cartTotal">—</strong></div>
+  <p id="cartNote" class="hint"></p>
+</section>
+
+<!--
+  結帳前的確認（2026-09-18 從頁面最上方移到這裡）。
+
+  使用者要求「不要將缺點一次全露出來」。原本一進購買頁、還沒看到任何商品，
+  就先是一整塊「購買前請確認這五件事」——等於先列限制再講價值。
+  **條件一條都沒有刪**，只是移到「按下結帳之前」：買家仍然在付錢之前看到，
+  但不是在決定要不要看下去之前。七天鑑賞期的排除仍由下方的同意勾選承擔（法定要件）。
+
+  ⚠️ 原本第四條寫「只有五種正式場次能翻譯，紀錄片、記者會、賽後訪談、精華與其他節目
+     沒有官方英文字幕」——**與實際資料不符**：共用快取裡有西班牙賽前節目 1,552 句、
+     澳洲賽後節目 483 句、各站暖身 200～970 句。那一條把賣點寫成了限制，已改正。
+-->
+<div class="notice" id="beforePay">
+  <strong data-edit="buy.check.title">結帳前，確認一下觀看環境</strong>
+  <ul class="tight">
+    <li data-edit="buy.check.1"><b>F1TV Pro 或 Premium 訂閱</b>：PitLingo 翻譯的是 F1TV 播放器上的英文字幕（還沒有的話，可以選擇上方的代訂服務）。</li>
+    <li data-edit="buy.check.2"><b>桌面版 Chrome 或 Edge</b>：目前不支援手機、平板與 Safari。</li>
+    <li data-edit="buy.check.3"><b>可以觀看 F1TV 的網路環境</b>：F1TV 在台灣未提供服務，觀看時需自備 VPN（本服務不提供）。</li>
+    <li data-edit="buy.check.4"><b>先試用再購買</b>：數位服務開通後不適用七日鑑賞期，每天都能先免費試用（登入後 15 分鐘、未登入 5 分鐘）。</li>
+  </ul>
+</div>
+
+<form id="form" novalidate>
+  <label class="field">
+    <span>Email</span>
+    <input id="email" type="email" required autocomplete="email"
+           placeholder="授權綁在這個信箱的帳號">
+    <em>授權會綁在這個信箱的帳號上，使用時要用它登入擴充功能。請填寫常用信箱。</em>
+  </label>
+
+  <!--
+    升級補差價。2026-10-30 起看**登入的帳號**：帳號裡本賽季買過的比賽週通行證自動折抵，
+    不必再填授權碼。結帳信箱要是帳號裡的信箱（新的賽季票放進同一個帳號）。
+  -->
+  <label class="agree" id="upgradeWrap" hidden>
+    <input id="upgrade" type="checkbox">
+    <span>
+      我先前買過<b>比賽週通行證</b>，要升級為賽季通行證
+      <em>需要先<a href="/account">登入</a>，帳號裡本賽季的比賽週通行證會自動折抵。</em>
+    </span>
+  </label>
+
+  <p class="field" id="upgradeKeyWrap" hidden><em id="creditNote"></em></p>
+
+  <label class="agree">
+    <input id="agree" type="checkbox">
+    <span>
+      我已閱讀並同意<a href="/terms" target="_blank" rel="noopener">使用條款</a>與<a href="/privacy" target="_blank" rel="noopener">隱私權政策</a>，
+      並同意本服務為<b>數位服務，開通後不適用七天鑑賞期</b>。
+    </span>
+  </label>
+
+  <button id="go" type="submit" disabled>選擇方案後即可結帳</button>
+  <p id="msg" class="msg"></p>
+</form>
+
+<div class="faq">
+  <h2 data-edit="buy.faq.title">常見問題</h2>
+
+  <h3 data-edit="buy.faq.1.q">買了之後可以換電腦嗎？</h3>
+  <p data-edit="buy.faq.1.a">可以。<b>授權跟著你的帳號走，不綁定裝置。</b>在新電腦登入同一個帳號即可使用，最多 3 台裝置同時啟用，也能自行解除後轉移到新電腦。</p>
+
+  <h3 data-edit="buy.faq.2.q">直播也能用嗎？</h3>
+  <p data-edit="buy.faq.2.a">可以。直播與重播都支援；重播時會先把整支影片的字幕準備好，中文幾乎與畫面同步出現。</p>
+
+  <h3 data-edit="buy.faq.3.q">還需要 F1TV 訂閱嗎？</h3>
+  <p data-edit="buy.faq.3.a">需要。PitLingo 翻譯的是 F1TV 播放器上的英文字幕，影片來自你自己的 F1TV 帳號。</p>
+
+  <!-- 退款刻意不開放編輯：法規用語 -->
+  <h3>可以退款嗎？</h3>
+  <p>數位服務開通後原則上不退款——這也是我們提供每天 15 分鐘免費試用的原因。
+     但若服務因 F1TV 改版而失效且我們無法修復，會主動按剩餘期間比例退款。
+     詳見<a href="/faq">常見問題</a>　·
+  <a href="/terms">使用條款</a>。</p>
+</div>
+
+<p class="hint">
+  <span data-edit="buy.contact">訂單、退款或代訂進度的問題，請走</span>
+  <a href="/contact">聯絡我們</a>（會給你一組工單編號可以追蹤）。
+</p>
+
+</div>
+</div>
+</main>
+
+<form id="ecpay" method="post" hidden></form>
+<script src="/buy.js?v=9e11f92b"></script>
+<script src="/login-email.js?v=b8fb2e99"></script>
+<script src="/site-content.js?v=d321d26e"></script>
+<script src="/promo.js?v=b0a8a42c" defer></script>
+<!-- SITE-FOOTER：由 tools/site-chrome.js 產生，請勿直接修改 -->
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="頁尾導覽">
+      <a href="/buy">購買</a>
+      <a href="/faq">常見問題</a>
+      <a href="/account">我的帳號</a>
+      <a href="/contact">聯絡我們</a>
+      <a href="/terms">使用條款</a>
+      <a href="/privacy">隱私權政策</a>
+      <a href="mailto:pitlingo.office@gmail.com">pitlingo.office@gmail.com</a>
+    </nav>
+    <p>PitLingo 為獨立開發的第三方工具，與 Formula 1、FIA 或 Formula One World Championship Limited
+    無任何關聯，亦未獲其背書。F1、FORMULA 1 等商標均為其所有人之財產。</p>
+  </div>
+</footer>
+<!-- /SITE-FOOTER -->
+</body>
+</html>

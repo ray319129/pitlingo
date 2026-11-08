@@ -1,0 +1,403 @@
+/*
+  這個檔案同時服務「工具列彈出視窗」與「設定分頁」。
+  彈出時寬度受限，所以版面一律單欄、不用格線。
+
+  2026-11-03 改版（Ray：「優化美化擴充功能的GUI，使用與網站統一F1風格」）：
+  色票與節奏照抄網站 legal/site.css——碳黑底 #15151E、賽道紅 #E10600、8px 卡片、膠囊按鈕、頁首紅線。
+  ⚠️ 與網站同一條規則：**不用任何 F1 商標元素**（標誌、專有字型），借的是配色與版面節奏。
+  ⚠️ 不載入任何外部字型（擴充功能的隱私權政策沒有第三方請求）。
+  ⚠️ 單一深色主題是刻意的（網站同理）。所有顏色都明確塗上，不靠瀏覽器預設。
+  ⚠️ 類別名稱一律沿用：options.js 會依狀態切換 class（.on／.ok／.err／.pending…）。
+*/
+
+:root {
+  color-scheme: dark;
+  --bg: #15151e;
+  --bg-deep: #0e0e14;
+  --surface: #1e1e27;
+  --surface-2: #26262f;
+  --line: #313139;
+  --line-soft: rgba(255, 255, 255, .08);
+  --text: #ffffff;
+  --text-2: #c9c9cf;
+  --dim: #8b898c;
+  --accent: #e10600;          /* 賽道紅 */
+  --accent-hi: #ff3d33;
+  --accent-soft: rgba(225, 6, 0, .14);
+  --ok: #2bd47d;
+  --ok-soft: rgba(43, 212, 125, .12);
+  --warn: #f5b301;
+  --err: #ff5c57;
+  /* 2026-11-03 Ray：「要堅硬一點 不要那麼圓潤」——卡片 3px、小件 2px，膠囊一律改直角 */
+  --radius: 3px;
+  --radius-sm: 2px;
+  --pill: 2px;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { background: var(--bg); }
+body {
+  font: 14px/1.6 system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  margin: 0;
+  padding: 0 16px 16px;
+  min-width: 360px;
+  max-width: 560px;
+  background: var(--bg);
+  color: var(--text-2);
+  -webkit-font-smoothing: antialiased;
+}
+/* 頂端一條紅線：賽道視覺語言（與網站頁首同一個圖樣），不是任何標誌 */
+body::before {
+  content: ""; display: block; height: 3px; margin: 0 -16px;
+  background: linear-gradient(90deg, var(--accent) 0 38%, transparent 38% 40%, var(--accent) 40% 41%, transparent 41%);
+}
+
+/* 設定分頁（options_ui 開新分頁）時置中，彈出視窗時維持靠左 */
+@media (min-width: 600px) {
+  body { margin-inline: auto; padding: 0 28px 28px; }
+  body::before { margin: 0 -28px; }
+}
+
+a { color: var(--text); text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, .35); }
+a:hover { text-decoration-color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; border-radius: 4px; }
+::selection { background: var(--accent); color: #fff; }
+
+/* 帳號狀態列。**放在最上面**，因為它要回答的是「我現在是誰、我有多少額度」 */
+.acctBar {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 0 -16px; padding: 8px 16px;
+  background: var(--bg-deep); border-bottom: 1px solid var(--line-soft);
+  font-size: 12.5px;
+}
+.acctName { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acctName.on { color: var(--text); font-weight: 600; }
+.acctName.on::before {
+  content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--ok); margin-right: 7px; vertical-align: 1px;
+}
+.acctName .linkCode { color: var(--text); font-family: ui-monospace, Consolas, monospace; font-size: 15px; letter-spacing: 2px; }
+
+/* 配對確認碼的大框（2026-10-24）：等待配對時第一眼就看得到 */
+.linkBox {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  margin: 12px 0 4px; padding: 14px 10px;
+  border: 1px solid var(--accent); border-radius: var(--radius);
+  background: var(--accent-soft);
+}
+.linkBoxLabel, .linkBoxHint { font-size: 12px; color: var(--text-2); }
+.linkBoxCode {
+  font-family: ui-monospace, Consolas, monospace; font-size: 34px; font-weight: 800;
+  letter-spacing: 10px; padding-left: 10px; color: var(--text);
+}
+
+/* 管理版：客戶用的東西一律不出現（admin/options-admin.js 加 body.adminBuild） */
+body.adminBuild .customerOnly { display: none !important; }
+.acctBtn {
+  border: 1px solid var(--line); background: transparent; color: var(--text);
+  border-radius: var(--pill); padding: 3px 12px; font: inherit; font-size: 12px; font-weight: 600;
+  cursor: pointer; flex: none;
+}
+.acctBtn:hover { border-color: var(--accent); }
+
+header {
+  display: flex; align-items: center; gap: 11px;
+  margin: 16px 0 14px;
+}
+header img { border-radius: 2px; }
+header h1 {
+  font-size: 19px; margin: 0; color: var(--text);
+  font-weight: 800; letter-spacing: .2px; line-height: 1.2;
+}
+header .sub { margin: 0; font-size: 12px; color: var(--dim); }
+
+/* 小標：大寫、字距、左邊一小段紅——網站 .eyebrow 的同一套語言 */
+h2 {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11.5px; text-transform: uppercase; letter-spacing: 1.4px;
+  color: var(--text); margin: 0 0 12px; font-weight: 800;
+}
+h2::before { content: ""; width: 14px; height: 3px; background: var(--accent); border-radius: 2px; flex: none; }
+
+section { padding: 16px 0; border-top: 1px solid var(--line-soft); }
+section:first-of-type { border-top: 0; padding-top: 0; }
+
+/* ---------- 狀態卡 ---------- */
+.status {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--dim);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 4px;
+}
+.status:has(.dot.ok) { border-left-color: var(--ok); }
+.status:has(.dot.warn) { border-left-color: var(--warn); }
+.status:has(.dot.err) { border-left-color: var(--err); }
+.statusHead { display: flex; align-items: center; gap: 8px; }
+.statusHead strong { font-size: 15px; color: var(--text); }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dim); flex: none; }
+.dot.ok { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+.dot.warn { background: var(--warn); }
+.dot.err { background: var(--err); }
+.statusDetail { font-size: 12px; color: var(--dim); margin-top: 4px; }
+.statusAction { margin-top: 10px; font-size: 13px; }
+.statusAction b { color: var(--text); }
+
+/* ---------- 引導 ---------- */
+.onboard { border-top: 0; }
+.steps { margin: 0; padding-left: 20px; }
+.steps li { margin-bottom: 10px; }
+.steps li::marker { color: var(--accent); font-weight: 800; }
+.steps strong { font-weight: 600; color: var(--text); }
+.steps p { margin: 2px 0 0; }
+
+/* ---------- 表單 ---------- */
+.field { display: block; margin-bottom: 14px; }
+.field > span {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 13px; margin-bottom: 6px; color: var(--text);
+}
+.field output { color: var(--dim); font-variant-numeric: tabular-nums; font-size: 12px; }
+
+input[type="text"], input[type="password"], input:not([type]), select {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-deep);
+  color: var(--text);
+  font: inherit;
+}
+input:not([type]):focus, input[type="text"]:focus, input[type="password"]:focus, select:focus {
+  outline: none; border-color: var(--accent);
+}
+input::placeholder { color: #66646a; }
+input:not([type]) { font-family: inherit; }
+
+/* 滑桿：細軌道＋紅色已填段（--p 由瀏覽器原生 accent-color 畫，不用 JS） */
+/* 滑桿（2026-11-03 Ray：「可以拉動的那幾條bar的圓點改成賽車的emoji」）：
+   細直軌道，已走過的那段塗紅（--p 由 options.js fillRanges 依值寫入），拉柄是一台 🏎️。
+   拉柄用 SVG data URI 畫 emoji——不載入任何外部圖檔或字型 */
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 30px; margin: 0; background: transparent; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 1px;
+  background: linear-gradient(90deg, var(--accent) var(--p, 50%), var(--surface-2) var(--p, 50%));
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 36px; height: 36px; margin-top: -16px; border: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Ctext x='18' y='23' font-size='38' text-anchor='middle' transform='translate(36 0) scale(-1 1)'%3E%F0%9F%8F%8E%EF%B8%8F%3C/text%3E%3C/svg%3E") center / contain no-repeat;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .6));
+  cursor: grab;
+}
+input[type="range"]:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.12); }
+input[type="range"]:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+
+/* 開關：checkbox 畫成膠囊開關 */
+.toggle {
+  display: flex; align-items: flex-start; gap: 11px;
+  margin-bottom: 12px; cursor: pointer;
+}
+.toggle input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none; flex: none;
+  width: 34px; height: 20px; margin: 1px 0 0; border-radius: var(--pill);
+  background: var(--surface-2); border: 1px solid var(--line);
+  position: relative; cursor: pointer; transition: background .15s, border-color .15s;
+}
+.toggle input[type="checkbox"]::after {
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 1px; background: #8b898c;
+  transition: transform .15s, background .15s;
+}
+.toggle input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
+.toggle input[type="checkbox"]:checked::after { transform: translateX(14px); background: #fff; }
+.toggle span { font-size: 13px; color: var(--text); }
+.toggle em {
+  display: block; font-style: normal; font-size: 11.5px;
+  color: var(--dim); margin-top: 1px;
+}
+
+/* ---------- 字幕外觀（2026-11-03）---------- */
+/* 預覽：一塊模擬影片的畫面，字幕用 PL.subtitleLook 的同一組變數上色 */
+.spFrame {
+  position: relative; height: 128px; margin-bottom: 16px;
+  border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.35)),
+    linear-gradient(115deg, #3a4a5c 0%, #6d7f8c 34%, #c8c3b4 35%, #9a958a 52%, #5b6b4a 53%, #3f4d33 100%);
+}
+/* 一條賽道的白線＋路肩紅白，讓淺色字幕也有東西可以對比 */
+.spFrame::before {
+  content: ""; position: absolute; left: -10%; right: -10%; top: 58%; height: 6px;
+  transform: rotate(-6deg);
+  background: repeating-linear-gradient(90deg, #e10600 0 14px, #fff 14px 28px);
+  opacity: .85;
+}
+.spBox {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  width: max-content; max-width: 94%; text-align: center; line-height: 1.35;
+}
+#spZh {
+  color: var(--pl-fg); background: var(--pl-bg); text-shadow: var(--pl-shadow);
+  font-weight: 700; border-radius: 3px; padding: 2px 9px;
+}
+#spEn {
+  color: var(--pl-fg-en); background: var(--pl-bg-en); text-shadow: var(--pl-shadow-en);
+  border-radius: 3px; padding: 1px 8px;
+}
+
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.sw {
+  width: 30px; height: 30px; padding: 0; border-radius: var(--radius-sm);
+  background: var(--c); border: 2px solid var(--line); cursor: pointer;
+  position: relative; flex: none;
+}
+.sw:hover { filter: none; border-color: var(--dim); }
+/* 選中：紅框＋右下切角（與「前往購買」同一個硬邊語言，2026-11-03 Ray 要求） */
+.sw.on {
+  border: 3px solid var(--accent);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%);
+}
+/* 自訂：彩虹圈，選了自訂顏色後中間顯示那個顏色 */
+.sw.custom {
+  background: conic-gradient(#ff3d33, #ffd400, #7dff8a, #5ce1ff, #8a7dff, #ff5cd6, #ff3d33);
+  display: grid; place-items: center; overflow: hidden;
+}
+.sw.custom::after {
+  content: ""; width: 14px; height: 14px; border-radius: 1px;
+  background: var(--c, #fff); border: 2px solid var(--bg); pointer-events: none;
+}
+.sw.custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; padding: 0; border: 0; }
+
+/* 分段選擇（外框）：一排膠囊，選中的塗紅 */
+.seg {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--pill); padding: 3px;
+}
+.seg label { position: relative; cursor: pointer; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg span {
+  display: block; text-align: center; padding: 5px 0; border-radius: var(--pill);
+  font-size: 12.5px; font-weight: 600; color: var(--dim); transition: background .15s, color .15s;
+}
+.seg label:hover span { color: var(--text); }
+.seg input:checked + span {
+  background: var(--accent); color: #fff;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+}
+.seg input:focus-visible + span { outline: 2px solid var(--accent-hi); outline-offset: 1px; }
+
+.row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.row.wrap { flex-wrap: wrap; }
+
+button {
+  font: inherit; font-size: 13px; font-weight: 800; letter-spacing: .4px;
+  padding: 8px 18px;
+  border-radius: var(--pill);
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+button:hover { background: var(--accent-hi); }
+button:disabled { opacity: .5; cursor: default; background: var(--accent); }
+button.secondary { background: transparent; color: var(--text); border-color: var(--line); }
+button.secondary:hover { border-color: var(--text-2); background: transparent; }
+button.sw, button.sw:hover { background: var(--c); }
+/* 長得像次要按鈕的連結（「管理裝置」開網站的我的帳號） */
+a.btnLink {
+  font-size: 13px; font-weight: 700; padding: 8px 18px; border-radius: var(--pill);
+  border: 1px solid var(--line); color: var(--text); text-decoration: none;
+}
+a.btnLink:hover { border-color: var(--text-2); }
+
+.hint { font-size: 12px; color: var(--dim); margin: 6px 0 0; }
+.hint b { color: var(--text-2); font-weight: 600; }
+
+.result { font-size: 12.5px; }
+.result.ok { color: var(--ok); }
+.result.err { color: var(--err); }
+
+/* ---------- 授權 ---------- */
+.licGp {
+  margin: 8px 0 10px; padding: 10px 12px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--line); display: grid; gap: 3px;
+}
+.licGpRow { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.licGpRow span { color: var(--dim); }
+.licGpRow b { font-variant-numeric: tabular-nums; color: var(--text); }
+
+.licRow { display: flex; align-items: center; gap: 8px; color: var(--text); }
+.badge {
+  font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: var(--pill);
+  border: 1px solid var(--line); letter-spacing: .3px;
+}
+.badge.ok { color: var(--ok); border-color: currentColor; background: var(--ok-soft); }
+.deviceList { margin-top: 10px; font-size: 12.5px; }
+.deviceList .dev {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0; border-top: 1px solid var(--line-soft);
+}
+.deviceList .dev.me { font-weight: 600; color: var(--text); }
+.deviceList button { padding: 3px 10px; font-size: 12px; }
+
+/* ---------- 摺疊區 ---------- */
+.adv { border-top: 1px solid var(--line-soft); padding: 13px 0; }
+.adv > summary {
+  cursor: pointer; font-size: 11.5px; color: var(--text-2);
+  font-weight: 800; list-style: none; text-transform: uppercase; letter-spacing: 1.4px;
+}
+.adv > summary:hover { color: var(--text); }
+.adv > summary::-webkit-details-marker { display: none; }
+.adv > summary::before { content: "▸ "; color: var(--accent); }
+.adv[open] > summary::before { content: "▾ "; }
+.adv > *:not(summary) { margin-top: 10px; }
+
+/* ---------- 回報 ---------- */
+.field > span em.opt { font-style: normal; font-weight: 400; color: var(--dim); font-size: 11.5px; }
+.rpResult {
+  margin-top: 10px; padding: 10px 12px; border-radius: var(--radius);
+  border: 1px solid var(--line); background: var(--surface); font-size: 13px; color: var(--text);
+}
+.rpResult.ok { border-color: var(--ok); }
+.rpResult.err { border-color: var(--err); color: var(--err); }
+.ticket {
+  font-family: ui-monospace, monospace; font-size: 16px; letter-spacing: .5px;
+  user-select: all; display: inline-block; margin-top: 4px; color: var(--text);
+}
+
+/* ---------- 回報前的說明 ---------- */
+.notice {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warn);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  font-size: 12.5px;
+}
+.notice strong { display: block; margin-bottom: 4px; font-size: 13px; color: var(--text); }
+.notice p { margin: 0 0 6px; color: var(--dim); }
+.notice p:last-child { margin-bottom: 0; }
+.notice b { color: var(--text-2); font-weight: 600; }
+
+/* 購買入口。免費額度用完的人打開這一頁，第一眼要看得到出路。 */
+.buyBox {
+  margin-top: 14px; padding: 14px; text-align: center;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.buyBtn {
+  display: block; margin: 8px 0; padding: 11px 16px;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+  background: var(--accent); color: #fff;
+  border-radius: var(--pill); text-decoration: none; font-weight: 800; letter-spacing: .3px;
+}
+.buyBtn:hover { background: var(--accent-hi); }

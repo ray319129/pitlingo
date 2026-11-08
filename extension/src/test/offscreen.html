@@ -1,0 +1,8 @@
+<!doctype html>
+<!--
+  語音辨識測試：擷取分頁聲音用的 offscreen document。
+  ⚠️ **只存在於測試版**（tools/build-extension.js 產生正式版時整個 src/test/ 不會複製）。
+  MV3 的 service worker 不能用 getUserMedia，必須借這個看不見的頁面。
+-->
+<meta charset="utf-8">
+<script src="offscreen.js"></script>

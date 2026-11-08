@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 給搜尋引擎的頁面清單（2026-10-16）。只列公開、值得被搜尋到的頁面：
+     不列 /paid（付款結果，帶訂單參數才有意義）、/account（登入頁）、/welcome（安裝完成，只對剛安裝的人有意義）、404、後台。
+     新增公開頁面時這裡要一起加——check-links 會驗每一個網址都對得到檔案。 -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://pitlingo.com/</loc></url>
+  <url><loc>https://pitlingo.com/buy</loc></url>
+  <url><loc>https://pitlingo.com/faq</loc></url>
+  <url><loc>https://pitlingo.com/contact</loc></url>
+  <url><loc>https://pitlingo.com/terms</loc></url>
+  <url><loc>https://pitlingo.com/privacy</loc></url>
+  <url><loc>https://pitlingo.com/privacy-en</loc></url>
+</urlset>

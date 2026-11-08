@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PitLingo 語音辨識實驗室（測試版）</title>
+<!--
+  語音辨識實驗室（**只存在於測試版**，正式版建置時整個 src/test/ 不會複製）。
+
+  要回答的問題：
+    ① 聲音拿不拿得到（DRM 可能讓擷取到的聲音是空白）
+    ② 收割時能不能靜音、能不能 2 倍速（不行的話，收一支 2 小時的影片要佔用 2 小時、而且要一直聽）
+    ③ 「收割逐字稿 → 整份翻譯」做出來的東西準不準（與官方字幕逐分鐘比對）
+  邏輯在 asr-lab.js；段落組裝在 asr-assemble.js（有獨立測試 tools/check-asr-assemble.js）。
+-->
+<style>
+  :root { color-scheme: dark; --bg:#15151e; --card:#1e1e27; --line:#313139; --dim:#8b898c; --text:#fff; --red:#e10600; --ok:#2fbf71; --warn:#f5b301; --bad:#ff5a4e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.6 system-ui, "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+  header { padding: 14px 20px; border-bottom: 3px solid var(--red); display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+  header h1 { font-size: 18px; margin: 0; }
+  header .tag { color: var(--warn); font-size: 12px; border: 1px solid var(--warn); border-radius: 999px; padding: 0 8px; }
+  #target { color: var(--dim); font-size: 13px; }
+  main { max-width: 1180px; margin: 0 auto; padding: 16px 20px 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; min-width: 0; }
+  section.wide { grid-column: 1 / -1; }
+  h2 { font-size: 15px; margin: 0 0 8px; padding-left: 8px; border-left: 3px solid var(--red); }
+  .hint { color: var(--dim); font-size: 12px; margin: 4px 0 8px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+  button, select, input { font: inherit; color: var(--text); background: #26262f; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; }
+  button { cursor: pointer; }
+  button.primary { background: var(--red); border-color: var(--red); font-weight: 600; }
+  button:disabled { opacity: .45; cursor: default; }
+  input[type=number] { width: 80px; }
+  label.chk { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .meter { height: 14px; background: #0e0e14; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; flex: 1; min-width: 160px; }
+  .meter i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .2s; }
+  .verdict { font-size: 16px; font-weight: 700; margin: 8px 0; }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  .mono { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  .spark { font-family: ui-monospace, Consolas, monospace; letter-spacing: -1px; color: var(--ok); white-space: nowrap; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--dim); font-weight: 600; font-size: 12px; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { max-height: 420px; overflow: auto; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; font-size: 13px; }
+  .kv b { color: var(--dim); font-weight: 400; }
+  #log { max-height: 260px; overflow: auto; white-space: pre-wrap; }
+  .zh { color: #fff; } .en { color: #c9c9cf; }
+  .nulltime { color: var(--warn); }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>語音辨識實驗室</h1><span class="tag">測試版</span>
+  <span id="target">連線中…</span>
+</header>
+<main>
+
+<section>
+  <h2>① 聲音拿得到嗎</h2>
+  <div class="verdict" id="verdict">—</div>
+  <div class="row"><span>音量</span><div class="meter"><i id="meterBar"></i></div><span class="mono" id="meterText">—</span></div>
+  <div class="spark" id="spark"></div>
+  <div class="kv" id="videoState"></div>
+  <p class="hint">判斷方式：影片在播、沒有靜音，而近 6 秒的音量（RMS）仍低於 0.004 → 擷取到的是空白。
+    F1TV 的串流若有 DRM，Chrome 可能把分頁聲音交給擷取時變成靜音。</p>
+  <div class="row"><button id="stopCapture">停止擷取</button></div>
+</section>
+
+<section>
+  <h2>② 控制</h2>
+  <div class="row"><label class="chk"><input type="checkbox" id="monitor" checked> 監聽（聲音接回喇叭）</label></div>
+  <p class="hint">擷取時 Chrome 會把分頁本身靜音，喇叭聽到的是這裡接回去的聲音。<b>關掉＝靜音收割</b>：你聽不到，擷取照收。</p>
+  <div class="row"><label class="chk"><input type="checkbox" id="tabMute"> Chrome 分頁靜音（右鍵分頁的那個）</label></div>
+  <div class="row"><label class="chk"><input type="checkbox" id="videoMute"> 影片播放器靜音（video.muted）</label></div>
+  <div class="row">
+    <span>播放速度</span>
+    <select id="rate"><option>1</option><option>1.25</option><option>1.5</option><option>2</option></select>
+    <span class="mono" id="rateActual"></span>
+  </div>
+  <p class="hint">改速度後過一秒會讀回實際速度——F1TV 的播放器可能會把速度改回去。</p>
+</section>
+
+<section class="wide">
+  <h2>③ 自動測試：靜音與倍速能不能收割</h2>
+  <p class="hint">依序切換 7 種情況，每種擷取一段送辨識（不翻譯），比較音量、每秒影片辨識出幾個字、與官方字幕的相似度。
+    約花 7 段 × 每段秒數的辨識費用。<b>請先讓影片開著英文字幕（CC）播放</b>，相似度才算得出來。
+    每種情況是不同時段的內容，數字只能看大概；要精確請用 ④ 收割後的 ⑥ 比對。</p>
+  <div class="row">
+    <span>每種情況</span><select id="testSec"><option value="10">10 秒</option><option value="15" selected>15 秒</option><option value="20">20 秒</option></select>
+    <button id="testRun" class="primary">開始測試</button><button id="testAbort" disabled>中止</button>
+    <span id="testProgress" class="mono"></span>
+  </div>
+  <table><thead><tr><th>情況</th><th class="num">實際速度</th><th class="num">音量 RMS</th><th class="num">字數</th><th class="num">每秒影片字數</th><th class="num">與 CC 相似度</th><th>判定</th></tr></thead>
+    <tbody id="testRows"></tbody></table>
+  <div id="testConclusion" style="margin-top:8px"></div>
+</section>
+
+<section class="wide">
+  <h2>④ 收割逐字稿</h2>
+  <p class="hint">聲音切成重疊的段送辨識（每段不翻譯、要逐字時間），重疊區以中點為界只留一份，依停頓與句尾標點斷句，
+    時間換算成影片時間（暫停、倍速都算得對；跳轉那一秒內的字標「時間不明」）。收完到 ⑤ 整份翻譯。</p>
+  <div class="row">
+    <span>每段</span><select id="chunkSec"><option value="10">10 秒</option><option value="15" selected>15 秒</option><option value="20">20 秒</option></select>
+    <span>重疊</span><select id="overlapSec"><option value="1">1 秒</option><option value="2" selected>2 秒</option><option value="3">3 秒</option></select>
+    <span>時間校正</span><input type="number" id="offsetSec" step="0.1" value="0"><span>秒</span>
+    <button id="applyOffset">套用估計值</button>
+  </div>
+  <div class="row">
+    <button id="harvestStart" class="primary">開始收割</button>
+    <button id="harvestStop" disabled>停止收割</button>
+    <span id="harvestStats" class="mono"></span>
+  </div>
+  <div class="hint" id="openSentence"></div>
+  <div class="scroll"><table><thead><tr><th class="num">影片時間</th><th>英文</th><th>中文</th></tr></thead><tbody id="transcriptRows"></tbody></table></div>
+</section>
+
+<section>
+  <h2>⑤ 整份翻譯</h2>
+  <p class="hint">連續 40 句一批送翻譯，模型看得到前後文。不寫進共用快取。</p>
+  <div class="row"><button id="translate" class="primary" disabled>翻譯整份逐字稿</button><span id="trProgress" class="mono"></span></div>
+</section>
+
+<section>
+  <h2>⑥ 準確率（與官方字幕比對）</h2>
+  <p class="hint">以官方英文字幕為準，逐分鐘算字錯率（WER）。只有收割期間這個實驗室開著、影片有 CC 時才有資料。</p>
+  <div class="row"><button id="compare">重新計算</button><span id="accSummary"></span></div>
+  <div class="scroll" style="max-height:220px"><table><thead><tr><th>影片時間</th><th class="num">CC 字數</th><th class="num">辨識字數</th><th class="num">相似度</th></tr></thead><tbody id="accRows"></tbody></table></div>
+</section>
+
+<section class="wide">
+  <h2>⑦ 儲存與播放</h2>
+  <div class="row">
+    <button id="save" disabled>存到這台電腦</button>
+    <button id="export" disabled>匯出 JSON</button>
+    <label class="chk"><input type="checkbox" id="showOnVideo" disabled> 在影片上顯示這份逐字稿（對齊播放位置）</label>
+  </div>
+  <table><thead><tr><th>影片</th><th class="num">句數</th><th class="num">已翻譯</th><th>建立時間</th><th></th></tr></thead><tbody id="savedRows"></tbody></table>
+</section>
+
+<section class="wide">
+  <h2>除錯資訊</h2>
+  <div class="kv mono" id="captureState"></div>
+  <h3 style="font-size:13px;margin:12px 0 4px">最近的音訊段</h3>
+  <div class="scroll" style="max-height:220px"><table class="mono"><thead><tr><th class="num">段</th><th>用途</th><th class="num">秒</th><th class="num">RMS</th><th>結果</th><th class="num">辨識 ms</th><th class="num">往返 ms</th><th class="num">字</th><th>錯誤</th></tr></thead><tbody id="chunkRows"></tbody></table></div>
+  <h3 style="font-size:13px;margin:12px 0 4px">事件記錄</h3>
+  <div id="log" class="mono"></div>
+</section>
+
+</main>
+<script src="asr-assemble.js"></script>
+<script src="asr-lab.js"></script>
+</body>
+</html>

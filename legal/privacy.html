@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Titillium Web：formula1.com 實際使用的內文字型（實測 189 處）。
+     **只影響拉丁字母**——中文沒有對應字符會落回系統字型，
+     那也正是 f1-boxbox（繁體中文 F1 站）的做法：中文不掛自訂字型。
+     ⚠️ 這是站上唯一的第三方請求，隱私權政策的第三方表格必須同步列出。 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Titillium+Web:wght@400;600;700&display=swap">
+<title>隱私權政策 — PitLingo</title>
+<!--
+  託管位置：https://pitlingo.com/privacy
+  Chrome Web Store 的「隱私權政策網址」欄位必須填這個。
+
+  ⚠️ 這份文件必須與程式碼的實際行為一致。不一致的話：
+     商店審核會失敗，而且在台灣個資法下是不實陳述。
+     每次改動資料處理邏輯，這裡要一起改。
+     對照來源：SECURITY.md「資料處理」與 backend 的 METRIC_EVENTS 白名單。
+-->
+<link rel="stylesheet" href="/site.css?v=afd7e0d5">
+</head>
+<body>
+<!-- SITE-HEADER：由 tools/site-chrome.js 產生，請勿直接修改 -->
+<script>try{if(localStorage.getItem('pl_motion')==='paused')document.documentElement.setAttribute('data-motion','paused')}catch(e){}</script>
+<header class="site-header">
+  <div class="inner">
+    <nav class="site-nav" aria-label="主要導覽">
+      <a class="nav-head" href="/">
+        <span class="nav-mark">PitLingo</span>
+      </a>
+      <div class="nav-tick" aria-hidden="true"><span>F1TV 英文 CC 即時翻成繁體中文 / 台灣用語 / 不用換平台 / 每天免費 15 分鐘 / F1TV 英文 CC 即時翻成繁體中文 / 台灣用語 / 不用換平台 / 每天免費 15 分鐘 / </span></div>
+      <div class="nav-list">
+        <a href="/"><i class="tc" aria-hidden="true"></i><span class="pos" aria-hidden="true">1</span><span class="nm">首頁</span></a>
+        <a href="/buy"><i class="tc" aria-hidden="true"></i><span class="pos" aria-hidden="true">2</span><span class="nm">方案</span></a>
+        <a href="/faq"><i class="tc" aria-hidden="true"></i><span class="pos" aria-hidden="true">3</span><span class="nm">常見問題</span></a>
+        <a href="/account"><i class="tc" aria-hidden="true"></i><span class="pos" aria-hidden="true">4</span><span class="nm">我的帳號</span></a>
+        <a href="/contact"><i class="tc" aria-hidden="true"></i><span class="pos" aria-hidden="true">5</span><span class="nm">聯絡我們</span></a>
+      </div>
+      <a class="nav-cta" href="/#try">免費試用 15 分鐘</a>
+      <div class="nav-flow" aria-hidden="true"></div>
+      <div class="nav-rail" aria-hidden="true"><i></i></div>
+    </nav>
+    <a class="brand" href="/"><img src="/icon128.png" alt="" width="30" height="30"><span>PitLingo</span></a>
+  </div>
+</header>
+<!-- /SITE-HEADER -->
+<main class="page">
+<section class="page-hero">
+  <div class="wrap">
+    <p class="eyebrow">PitLingo</p>
+    <h1>隱私權政策</h1>
+    <div class="updated">PitLingo 瀏覽器擴充功能　·　最後更新：2026 年 10 月 31 日　·　<a href="/privacy-en" lang="en">English</a></div>
+  </div>
+</section>
+<div class="page-body-bg">
+<div class="wrap page-body">
+<div class="doc-body">
+
+<!--
+  2026-09-17 改版：補上帳號登入、聯絡表單、寄信與第三方服務。
+  ⚠️ 每一句都要對得上程式碼。改動前先確認：
+     保存期限 → REPORT_TTL_DAYS／METRIC_TTL_DAYS／SESSION_TTL_DAYS／OTP_TTL_SEC／ORDER_TTL（check-legal 會比對）
+     「原始 IP 不寫入儲存」→ rateLimited 與免費層都先雜湊（check-backend 18c）
+     Google 帳號記錄的欄位 → googleLogin() 的 acc（不含大頭照）
+-->
+
+<div class="box">
+  <strong>摘要</strong>
+  本服務將畫面上的英文字幕傳送至伺服器翻譯為中文後顯示。
+  您不登入、不購買時，我們不知道您是誰：只有一組隨機的安裝識別碼，不記錄您看了哪些影片，也不做跨網站追蹤。<br>
+  您<strong>購買</strong>、<strong>登入帳號</strong>或<strong>聯絡我們</strong>時，才會取得完成該件事所需的 email 等資料，
+  用途與保存期限逐項列在下方。
+</div>
+
+<h2>一、我們蒐集什麼</h2>
+
+<h3>1. 字幕文字</h3>
+<p>
+  當您在 F1TV 觀看影片且開啟英文字幕時，PitLingo 會讀取畫面上的英文字幕文字，
+  送到我們的伺服器翻譯成繁體中文。
+</p>
+<p>
+  <strong>這些譯文會被保存並與其他使用者共用。</strong>
+  同一支影片的字幕對所有人都一樣，所以翻譯一次之後，
+  其他人就不必再翻——這是本服務成本得以極低的原因。
+  儲存的內容只有「英文句子 → 中文譯文」的對應，
+  <strong>不包含是誰送出的</strong>。
+</p>
+
+<h3>2. 安裝識別碼</h3>
+<p>
+  首次啟動時，我們會產生一組隨機的識別碼（例如
+  <code>a3f2c1e8-…</code>）存在您的瀏覽器裡。它的用途只有三個：
+</p>
+<ul>
+  <li>防止濫用（限制單一安裝的每日翻譯量）</li>
+  <li>分階段推送（讓新版設定先給一小部分人試用）</li>
+  <li>授權綁定（如果您購買了付費方案）</li>
+</ul>
+<p>
+  <strong>這組識別碼是隨機產生的，本身不含任何個人資訊，也不會與您的 F1TV 帳號產生關聯。</strong>
+  但下列兩種情況，它會與您的其他資料一起被記錄，我們在此明白告知：
+</p>
+<ul>
+  <li><strong>啟用授權時</strong>（登入帳號後自動啟用）：識別碼會記在該份授權的「已啟用裝置」清單上（連同啟用與最後使用的時間），
+      用於執行每份授權的裝置數上限。授權本身對應購買時的 email。</li>
+  <li><strong>在擴充功能中登入帳號時</strong>：翻譯請求會附上登入憑證，
+      每日免費額度改以<strong>帳號</strong>計算（清除瀏覽器資料不會讓額度重來）。
+      我們只記錄「這個帳號今天用了多少句」，<strong>不記錄是哪些影片</strong>。</li>
+</ul>
+<p>使用者得隨時移除並重新安裝擴充功能以更換該識別碼。</p>
+
+<h3>3. 使用統計</h3>
+<p>我們會蒐集彙總的使用統計，用來改善產品與定價。<strong>全部是計數，不含任何可識別個人的內容</strong>：</p>
+<table>
+  <tr><th>我們記錄</th><th>為什麼</th></tr>
+  <tr><td>場次類型（練習賽／排位賽／衝刺賽／正賽／其他）</td><td>判斷免費範圍是否合理</td></tr>
+  <tr><td>免費額度用完時已觀看的分鐘數（分段記錄，如「10–15 分」）</td><td>判斷 15 分鐘是否足夠</td></tr>
+  <tr><td>是否為付費使用者（是／否）</td><td>了解轉換率</td></tr>
+  <tr><td>擴充功能版本、錯誤類型</td><td>發現新版本造成的問題</td></tr>
+</table>
+
+<h3>4. 診斷回報（只在您主動送出時）</h3>
+<p>
+  您在擴充功能中按下「傳送診斷資訊」時，我們會收到：
+</p>
+<ul>
+  <li>擴充功能的運作狀態：版本、快取命中率、事件時間軸</li>
+  <li><strong>目前觀看的影片網址</strong>（網址中的授權資訊會被遮蔽）</li>
+  <li>您自行填寫的問題描述與聯絡方式（皆為選填）</li>
+</ul>
+<p>
+  <strong>診斷內容不含您的授權碼，也不含任何存取權杖。</strong>
+  這些資料僅用於重現與修復問題，回報保存 90 天後自動刪除。
+  送出時會同時寄一份通知到我們的客服信箱（見第五節「寄信」與「客服信箱」）。
+</p>
+
+<h3>5. 帳號登入</h3>
+<p>
+  「我的帳號」頁面讓您查看購買紀錄、授權與已啟用的裝置。<strong>不登入也能購買與使用免費額度；
+  授權則須在擴充功能登入購買時 email 的帳號才能使用</strong>（授權綁定帳號，登入即自動啟用）。登入方式有兩種：
+</p>
+<table>
+  <tr><th>方式</th><th>我們取得與保存的資料</th></tr>
+  <tr>
+    <td>Google 登入</td>
+    <td>Google 帳號的識別編號、email、顯示名稱，以及帳號建立與最後登入時間。
+        <strong>不取得</strong>您的大頭照、聯絡人、雲端硬碟、Gmail 內容或任何其他 Google 資料。
+        登入由 Google 驗證，我們收不到您的 Google 密碼。</td>
+  </tr>
+  <tr>
+    <td>Email 驗證碼</td>
+    <td>我們寄一組 6 位數驗證碼到您的信箱。伺服器<strong>只保存驗證碼的雜湊值</strong>，
+        10 分鐘後失效。登入後保存的帳號資料為 email、帳號建立與最後登入時間。</td>
+  </tr>
+</table>
+<p>
+  登入後，網站以一個<strong>登入必需的 cookie</strong> 保存登入憑證：它設定為 HttpOnly
+  （網頁上的程式讀不到）、只在加密連線傳送、只送往本服務的 API，效期 14 天。
+  擴充功能的登入憑證存在擴充功能自己的儲存空間，效期 30 天。
+  按「登出」時伺服器會<strong>立即作廢</strong>該憑證；按「登出所有裝置」則一併作廢您所有瀏覽器與擴充功能的憑證。
+  本服務不使用任何廣告或追蹤用的 cookie。
+  若您從擴充功能發起登入，網站會透過一組<strong>一次性、5 分鐘內有效、取用後即刪除</strong>的配對碼，
+  把登入憑證交給擴充功能。
+</p>
+<p>
+  若您以不同的 email 購買，可在帳號頁輸入購買時的 email「認領」該筆購買：我們會寄一組驗證碼到<strong>購買時的 email</strong>（該 email 沒有購買紀錄時不寄），
+  輸入後該 email 才會加入您帳號的「已併入信箱」清單。
+</p>
+<p>
+  <strong>轉送附贈的比賽週通行證</strong>：您在帳號頁填寫的受贈人 email 會成為那份授權的擁有者，
+  我們會寄一封信通知對方，並在您的訂單紀錄中保存「轉送給誰」，以便處理客服與退款。
+  請只填寫已同意接受轉送的人的 email。
+</p>
+<p>
+  <strong>歡迎信</strong>：第一次登入、建立帳號時，我們會寄<strong>一封</strong>歡迎信到登入的 email，
+  內容是使用方式與方案介紹（含購買連結）。這是唯一一封，之後不會寄送行銷信件。
+</p>
+<p>
+  <strong>新裝置登入通知</strong>：您的帳號在新的瀏覽器或新的擴充功能上登入時，我們會寄信通知您（裝置類型、大致地點、時間），
+  讓您在不是本人時能立即「登出所有裝置」。建立帳號後 30 分鐘內加入的裝置（例如註冊後馬上連結擴充功能）不另外通知。為了辨認「新的」裝置，網站會在您的瀏覽器設定一個
+  <strong>裝置識別 cookie</strong>（隨機產生、HttpOnly、效期 400 天，登出時不會刪除），
+  帳號資料中保存最多 20 台曾登入裝置的<strong>雜湊後識別碼、裝置類型（例如「Windows Chrome」）與登入時間</strong>。
+  通知信中的大致地點由 Cloudflare 依連線推估（城市與國家），<strong>只寫進那封信、不另外儲存</strong>，也不儲存 IP。
+</p>
+
+<h3>6. 付款資訊</h3>
+<p>
+  <strong>我們不接觸、不儲存您的信用卡號或任何付款資料。</strong>
+  付款完全在金流服務商（綠界科技）的頁面上完成。
+  結帳時我們會把<strong>訂單編號、金額、商品名稱與您填寫的 email</strong> 交給綠界以建立交易，
+  並從綠界收到「這筆訂單是否付款成功」的通知；
+  以 ATM 或超商代碼付款時，也會收到綠界產生的繳費帳號或代碼，用於在付款結果頁顯示給您。
+  結帳時填寫的 email 只用於寄送收據與開通通知，<strong>不會用於行銷</strong>（建立帳號時的歡迎信見第一節第 5 點）。
+</p>
+
+<h3>7. 訂單與購物車</h3>
+<p>
+  您在購買頁選擇的方案、數量、折抵明細與應付金額，會與訂單編號、email 一起儲存，
+  用於開通授權、查詢訂單與處理退款爭議。訂單在結帳當下即建立（包含最後未付款的訂單）。
+  升級補差價功能會以您<strong>登入的帳號</strong>（及帳號內已認領的 email）查詢先前購買的比賽週通行證金額——
+  未登入時不查詢、也不折抵；
+  <strong>僅查詢金額與效期，不查詢您觀看的內容</strong>。
+</p>
+
+<h3>8. F1TV 代訂服務</h3>
+<p>
+  若您購買代訂服務，我們會另外取得完成該服務所必需的資訊：
+</p>
+<ul>
+  <li>您的 email —— 用於完成訂閱程序、通知您登入查看</li>
+  <li>訂單的處理狀態（待處理／已完成）、交付時間與通知信是否寄出，用於客服查詢</li>
+  <li>我們交付給您使用的 F1TV 帳號之登入信箱與密碼（見下）</li>
+</ul>
+<p>
+  <strong>本服務不會向您索取您自己的 F1TV 帳號密碼。</strong>
+  我們交付給您使用的 F1TV 帳號，其登入資訊<strong>以加密方式保存</strong>，
+  只在您登入「我的帳號」並按下「顯示密碼」時解密，<strong>每次查看都會記錄時間與裝置類型（電腦／行動裝置）</strong>；
+  通知信中不會寫入密碼。使用期間結束後，該登入資訊即自動刪除。
+  代訂為人工服務，上述資訊會由人員實際經手。
+</p>
+
+<h3>9. 聯絡表單</h3>
+<p>
+  您在「聯絡我們」送出表單時，我們會保存您填寫的 <strong>email、訂單編號（選填）與問題描述</strong>，
+  並產生一組工單編號。這些資料僅用於回覆您，保存 90 天後自動刪除。
+</p>
+
+<h2>二、我們<u>不</u>蒐集什麼</h2>
+<p>下列為本服務明確<strong>不</strong>為之事項：</p>
+<ul>
+  <li><strong>不記錄您看了哪一支影片。</strong>翻譯時會用影片編號當作快取的鍵，
+      但那個編號不會與您的識別碼、授權碼或帳號一起儲存——本服務無法自所儲存之資料反推特定使用者之觀看紀錄。
+      （例外只有您<strong>主動送出的診斷回報</strong>，其中含當下的影片網址，見第一節第 4 點）</li>
+  <li><strong>不儲存 IP 位址本身。</strong>為了防止免費額度被重複領取、以及限制表單與登入的嘗試頻率，
+      我們會將您的 IP 位址經<strong>單向雜湊</strong>（HMAC-SHA256）後取前 16 碼使用。
+      <strong>原始 IP 不會被寫入任何儲存</strong>，而雜湊值無法還原成 IP，
+      也無法與您的授權碼或 email 對應。免費額度紀錄每日自動失效，頻率限制紀錄 2 分鐘內失效；
+      為了防止驗證碼被暴力猜測而保存的次數紀錄（雜湊後的 IP 與 email，不含驗證碼本身）最長 3 天後刪除</li>
+  <li>不讀取使用者之瀏覽紀錄、書籤、密碼或其他分頁內容</li>
+  <li>不讀取使用者之 F1TV 帳號資訊或 cookie</li>
+  <li>不使用廣告追蹤，也不使用 Google Analytics 之類會建立個人瀏覽紀錄的分析工具。網站（pitlingo.com）使用 <strong>Cloudflare Web Analytics</strong> 統計整體瀏覽量與網頁載入速度（見第五節）：依 Cloudflare 的說明，它不使用 cookie 或 localStorage 等瀏覽器儲存，也不以 IP 位址或瀏覽器資訊辨識個人。這一項是 Cloudflare 在傳送網頁時加入的，<strong>不在本服務的程式碼中</strong>；<strong>擴充功能內不含任何分析工具</strong></li>
+  <li>不進行跨網站追蹤</li>
+  <li>不販售、不出租、不交換任何資料</li>
+</ul>
+
+<h2>三、擴充功能的權限</h2>
+<table>
+  <tr><th>權限</th><th>用途</th></tr>
+  <tr><td><code>storage</code></td><td>把您的顯示設定、授權狀態與登入憑證存在本機</td></tr>
+  <tr><td><code>*.formula1.com</code></td><td>讀取畫面上的字幕、顯示中文疊字，並取得字幕檔案（與播放器取得的是同一份）。<br>涵蓋 <code>f1tv.formula1.com</code> 與字幕檔案所在的 CDN（<code>ott-video-cf</code>／<code>ott-video-fer-cf</code>——F1TV 會依直播或重播使用不同的主機名稱）。<b>我們只讀取字幕，不讀取影片、聲音或您的 F1TV 帳號資訊。</b></td></tr>
+  <tr><td><code>f1prodlive.akamaized.net</code></td><td>F1TV 有時把同一份字幕檔案放在這個 CDN 主機（Akamai）上，用途與上一列相同：取得播放器本來就會取得的字幕檔案。<b>只讀取字幕。</b></td></tr>
+  <tr><td><code>api.pitlingo.com</code></td><td>與我們的翻譯伺服器通訊</td></tr>
+  <tr><td><code>f1zh-api.pitlingo.workers.dev</code></td><td>翻譯伺服器的舊位址，保留供舊版使用</td></tr>
+</table>
+<p>PitLingo <strong>只在 F1TV 的網頁上運作</strong>，在其他任何網站都不會啟動。</p>
+
+<h2>四、資料保存與刪除</h2>
+<table>
+  <tr><th>資料</th><th>保存期限</th></tr>
+  <tr><td>譯文（共用快取）</td><td>長期保存。內容是字幕譯文，不含個人資訊</td></tr>
+  <tr><td>使用統計</td><td>約 13 個月，用於跨賽季比較</td></tr>
+  <tr><td>診斷回報、聯絡表單工單</td><td>90 天後自動刪除</td></tr>
+  <tr><td>訂單記錄（含未付款的訂單）</td><td>約 13 個月（400 天）後自動刪除</td></tr>
+  <tr><td>授權資料（授權碼、email、訂單編號、已啟用裝置）</td><td>授權有效期間，加上稅務所需的保存期</td></tr>
+  <tr><td>帳號資料（登入方式、email、顯示名稱、登入時間）</td><td>至您要求刪除為止</td></tr>
+  <tr><td>登入驗證碼（雜湊值）</td><td>10 分鐘</td></tr>
+  <tr><td>登入憑證</td><td>網站 14 天、擴充功能 30 天後失效；登出時伺服器立即作廢</td></tr>
+  <tr><td>代訂交付的 F1TV 帳號登入資訊（加密）</td><td>使用期間結束後自動刪除</td></tr>
+  <tr><td>登入防護的次數紀錄（雜湊後的 IP 與 email）</td><td>最長 3 天</td></tr>
+  <tr><td>免費額度計數</td><td>當日有效，隔日自動失效</td></tr>
+  <tr><td>本機設定與識別碼</td><td>存在您的瀏覽器，移除擴充功能即刪除</td></tr>
+  <tr><td>寄到客服信箱的通知信（訂單、診斷回報）</td><td>最長 13 個月，由我們定期清理</td></tr>
+</table>
+
+<h3>資料刪除方式</h3>
+<ul>
+  <li><strong>本機資料與登入憑證</strong>：登出，或移除擴充功能即可</li>
+  <li><strong>使用統計</strong>：已是彙總計數，無法對應到個人，因此無法單獨刪除</li>
+  <li><strong>帳號、授權資料、訂單與工單</strong>：來信
+      <a href="mailto:pitlingo.office@gmail.com">pitlingo.office@gmail.com</a>
+      並提供登入的 email、訂單編號或工單編號，我們會在 30 天內處理。
+      依法須保存的交易紀錄（例如稅務用途）將保存至法定期限屆滿</li>
+</ul>
+
+<h2>五、第三方服務</h2>
+<p>我們只把完成服務所必需的資料交給下列服務商：</p>
+<table>
+  <tr><th>服務</th><th>用途</th><th>會接觸到什麼</th></tr>
+  <tr><td>Cloudflare（Workers、KV、Pages）</td><td>網站主機、伺服器與資料庫</td><td>本政策所列、儲存在我們伺服器上的所有資料；以及連線時的 IP 位址（由 Cloudflare 依其政策處理，用於網路安全與傳輸）</td></tr>
+  <tr><td>Cloudflare Web Analytics</td><td>網站的整體瀏覽量與網頁載入速度統計</td><td>只在您瀏覽網站（pitlingo.com）時：所在頁面的網址、來源網站、國家、裝置類型、瀏覽器、作業系統與網頁載入時間。依 Cloudflare 的說明，它不使用 cookie 或 localStorage 等瀏覽器儲存，不以 IP 位址、瀏覽器資訊或其他資料辨識個人，也不跨網站追蹤個別使用者；我們只看得到彙總後的數字。<b>擴充功能不會載入它</b></td></tr>
+  <tr><td>Anthropic（Claude）</td><td>翻譯引擎</td><td>僅英文字幕文字，不含任何識別碼</td></tr>
+  <tr><td>綠界科技 ECPay</td><td>金流</td><td>訂單編號、金額、商品名稱、email，以及您在綠界頁面上輸入的付款資料（我們不接觸）</td></tr>
+  <tr><td>Google（Google Identity Services）</td><td>「以 Google 登入」</td><td>只在您開啟「我的帳號」頁面時，瀏覽器會向 Google 載入登入按鈕，Google 因此會接觸到您的 IP 位址與瀏覽器資訊；您選擇 Google 登入時，Google 會把您的帳號識別編號、email 與顯示名稱交給我們。此外，本網站每一頁都會向 Google Fonts（fonts.googleapis.com、fonts.gstatic.com）載入一個拉丁字母的顯示字體，Google 因此會接觸到您的 IP 位址與瀏覽器資訊；我們沒有、也無法從中取得任何其他資料。<b>擴充功能不會載入任何 Google 資源</b></td></tr>
+  <tr><td>Resend</td><td>寄信</td><td>收件人 email 與信件內容：登入與認領驗證碼、收據與開通通知、建立帳號時的歡迎信、新裝置登入通知（含裝置類型與大致地點），以及寄到客服信箱的通知</td></tr>
+  <tr><td>Google（Gmail，客服信箱 pitlingo.office@gmail.com）</td><td>客服與營運通知</td><td>您寄給我們的信；以及系統寄到客服信箱的通知——新訂單（訂單編號、方案、email、授權碼）與診斷回報（見第一節第 4 點）</td></tr>
+</table>
+
+<h2>六、您的權利</h2>
+<p>
+  依據台灣《個人資料保護法》，您有權查詢、閱覽、補正、刪除我們持有的個人資料，
+  並請求停止蒐集、處理或利用。
+</p>
+<p>
+  本服務之設計已將個人資料蒐集最小化。實際可能持有之個人資料為：
+  <strong>購買時填寫的 email 與訂單記錄</strong>、
+  <strong>登入帳號時的 email、顯示名稱與 Google 帳號識別編號</strong>、
+  以及<strong>您透過聯絡表單或診斷回報主動提供的聯絡方式與內容</strong>。
+  相關請求請寄至 <a href="mailto:pitlingo.office@gmail.com">pitlingo.office@gmail.com</a>。
+</p>
+
+<h2>七、兒童隱私</h2>
+<p>
+  本服務不針對未滿 13 歲的兒童，也不會刻意蒐集其個人資料。
+</p>
+
+<h2>八、準據法與管轄</h2>
+<p>
+  本政策以中華民國法律為準據法。因本政策所生之爭議，
+  以<strong>臺灣臺中地方法院</strong>為第一審管轄法院。
+</p>
+
+<h2>九、政策變更</h2>
+<p>
+  本政策若有變更，我們會更新本頁最上方的日期。
+  若涉及資料蒐集方式的實質變更，我們會在擴充功能內主動通知。
+</p>
+</div>
+</div>
+</div>
+</main>
+<!-- SITE-FOOTER：由 tools/site-chrome.js 產生，請勿直接修改 -->
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="頁尾導覽">
+      <a href="/buy">購買</a>
+      <a href="/faq">常見問題</a>
+      <a href="/account">我的帳號</a>
+      <a href="/contact">聯絡我們</a>
+      <a href="/terms">使用條款</a>
+      <a href="/privacy">隱私權政策</a>
+      <a href="mailto:pitlingo.office@gmail.com">pitlingo.office@gmail.com</a>
+    </nav>
+    <p>PitLingo 為獨立開發的第三方工具，與 Formula 1、FIA 或 Formula One World Championship Limited
+    無任何關聯，亦未獲其背書。F1、FORMULA 1 等商標均為其所有人之財產。</p>
+  </div>
+</footer>
+<!-- /SITE-FOOTER -->
+</body>
+</html>

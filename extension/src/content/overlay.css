@@ -1,0 +1,61 @@
+/*
+ * 疊字層樣式
+ *
+ * 全部用 #pitlingo- 前綴的 id 選擇器，特異性夠高，
+ * 不會被 F1TV 自己的樣式蓋掉，也不會反過來影響到頁面。
+ * position:fixed + 由 JS 計算座標，才能同時應付視窗、網頁全螢幕、真全螢幕。
+ */
+
+#pitlingo-box {
+  position: fixed;
+  z-index: 2147483647;
+  pointer-events: none;              /* 絕對不能擋住播放器的操作 */
+  transform: translateX(-50%);
+  text-align: center;
+  font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  line-height: 1.35;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+
+  /*
+   * 中文與英文必須上下堆疊。
+   * 兩個子元素都是 inline-block，若父層不是 flex 就會並排在同一行——
+   * userscript 版本是靠一個 <br> 分隔的，移植過來時拿掉了 <br> 卻沒改排版。
+   * 用 flex column 比 <br> 乾淨，也不受子元素 display 值影響。
+   */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+#pitlingo-box.on { opacity: 1; }
+
+/* 顏色、背景、外框由使用者設定（main.js applyLook → PL.subtitleLook 寫 --pl-* 變數）。
+   後面的值是沒設定時的預設，等於改版前寫死的樣子。 */
+#pitlingo-zh {
+  color: var(--pl-fg, #fff);
+  font-weight: 700;
+  background: var(--pl-bg, rgba(0, 0, 0, 0.72));
+  border-radius: 6px;
+  padding: 4px 14px;
+  display: inline-block;
+  text-shadow: var(--pl-shadow, 0 2px 4px rgba(0, 0, 0, 0.9));
+}
+
+#pitlingo-en {
+  color: var(--pl-fg-en, #c9c9c9);
+  font-weight: 400;
+  background: var(--pl-bg-en, rgba(0, 0, 0, 0.55));
+  border-radius: 5px;
+  padding: 2px 12px;
+  display: inline-block;
+  text-shadow: var(--pl-shadow-en, 0 1px 3px rgba(0, 0, 0, 0.9));
+}
+
+/* 尚未取得譯文時的等待指示（只有逐句即時翻譯路徑會用到） */
+#pitlingo-zh.pending {
+  color: #b9c0c8;
+  font-weight: 400;
+  font-style: italic;
+}
